@@ -1,0 +1,472 @@
+{
+  "dataString": [
+    {
+      "hash": "97b207c228962a83a70936ea3a305c36d7cdaf7a57c0e6e18861218e9c35c0be",
+      "name": "Night Rider",
+      "author": "Abraxis & Crystal Skies",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 309.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "a132ccd535bf6825ef8425d6c126d031eb1062157a35fe6f5cbfb84f06019955",
+      "name": "Video Killed the Radio Star",
+      "author": "The Buggles",
+      "beatmapper": "Oneill",
+      "difficulty": 3,
+      "trackDuration": 201.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "cad1257bf0c716b32894ace160f3e9e54a9aea33ed78220fe9b27f93d4db98df",
+      "name": "Juice",
+      "author": "Lizzo",
+      "beatmapper": "Oneill & BlackBlazon",
+      "difficulty": 4,
+      "trackDuration": 204.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "0712465231c55cae95dfb33c5dfb56bbf1c6d0f4c6df809bcab0d701f799f1e8",
+      "name": "Safety Dance",
+      "author": "Men Without Hats",
+      "beatmapper": "Oneill",
+      "difficulty": 3,
+      "trackDuration": 272.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "def3e887966f07a38381f3caceb49121a3de98e19ec1d16559c5fd35054afad0",
+      "name": "Wonderland",
+      "author": "Caravan Palace",
+      "beatmapper": "An Underdog",
+      "difficulty": 4,
+      "trackDuration": 175.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "0f56bc8ef9b7eb6e7da47b5032f7a0a598db984d36af67e2eecf08f81bf24c87",
+      "name": "Daft Punk",
+      "author": "Pentatonix",
+      "beatmapper": "Various Mappers",
+      "difficulty": 4,
+      "trackDuration": 249.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "60a58812b735ef711da0b82c57f79ee8b2fcc99da296fb15652bd133e27e536b",
+      "name": "DRAMOPHONE",
+      "author": "CARAVAN Palace",
+      "beatmapper": "RAPTOR",
+      "difficulty": 4,
+      "trackDuration": 221.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "e2d3ce8a86f23750748d35f3e5b583372dbd5454db02d32cede8f0492d46994a",
+      "name": "Maneater",
+      "author": "Hall & Oates",
+      "beatmapper": "Ris",
+      "difficulty": 3,
+      "trackDuration": 270.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "3e75f6f5d16c1db4c8462ae320b5a6482d0d5d4963233b399215fdbf7213f2b8",
+      "name": "Pantheon",
+      "author": "Various Artists (Ophelia Collab)",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 303.0,
+      "addedTime": 1680447334
+    },
+    {
+      "hash": "cfb5d5465ddd5dd9f0012632e7883f4051eced15ae531e2fec8bf04bc23f34ad",
+      "name": "Jason",
+      "author": "Midnight",
+      "beatmapper": "WitchyRe",
+      "difficulty": 4,
+      "trackDuration": 271.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "0617f602f79ec331bea915d7fae9ab1cd75cb4a71e900caf8ee92532a6d2830a",
+      "name": "Don't You Forget ft. Lilja Bloom & Anduze",
+      "author": "Parov Stelar",
+      "beatmapper": "Billy",
+      "difficulty": 4,
+      "trackDuration": 205.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "c56e9c38aace7c1a16f1424d21c6c038efecfb2a1d93af1617eb38a17af1efe4",
+      "name": "Ghost",
+      "author": "Justin Beiber",
+      "beatmapper": "bonnasaurusrex",
+      "difficulty": 4,
+      "trackDuration": 155.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "5d2e6d84d6e37648e26d21056a85be9eb23f6b0668bec0da42ec169e034a2b14",
+      "name": "Believe",
+      "author": "Teminite",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 350.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "46b85540e7f87ea5a871dcdbea5557eb855de81c558836d481058d432bbbc1fa",
+      "name": "Feel the Vibe",
+      "author": "Turbotronic",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 168.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "7bb146624c7d8131d78f4a0dea2757143510ce0d2164cb121434e22a04ac0483",
+      "name": "Like a Prayer",
+      "author": "Madonna",
+      "beatmapper": "DuckCurious",
+      "difficulty": 4,
+      "trackDuration": 345.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "36f7c169fbfcf445dd79dad4d8285e786dbebde95335575720261507f096c658",
+      "name": "Always By Your Side",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 230.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "7edff556872e5d4fcc03ddb5aace95cfa723e98284045219c4931c95fd83108d",
+      "name": "Lollipop",
+      "author": "Mika",
+      "beatmapper": "DonJuannelly",
+      "difficulty": 4,
+      "trackDuration": 183.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "6c7176f43dedb398f85a9745bf96a7fdc09ac4c29b1b428c943d446ad575960e",
+      "name": "I Just Need You",
+      "author": "Toby Mac",
+      "beatmapper": "JENNIFURR",
+      "difficulty": 2,
+      "trackDuration": 240.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "8fcb931076a54914f9a6f8b77381492c17f73bbf4136ec455f259381b9e5cefc",
+      "name": "Overthinker",
+      "author": "INZO",
+      "beatmapper": "smb",
+      "difficulty": 4,
+      "trackDuration": 271.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "af98ea40c54c33f752d896f24fa74b9c9bc858e762691ce7859b3b4aec14fb42",
+      "name": "Levan Polkka (Nightcore VSNS remix)",
+      "author": "Hatsune Miku",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 234.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "72ecda7112300c0bdcd63f5d89b048656422477afee20fe597ccc0fe5023b161",
+      "name": "Ping! 2",
+      "author": "Exyl",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 188.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "3ed856adb375e73bf07fcbd89b1467b6f5cfd49d3206bb32880799d8e11fbcdc",
+      "name": "Levitating",
+      "author": "Dua Lipa",
+      "beatmapper": "An Underdog",
+      "difficulty": 4,
+      "trackDuration": 203.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "f4f00497388ff1df9a6120f9e50e915c82e769a344223c89023e4256cf91d694",
+      "name": "Drifting In The Dark",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 225.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "8602c251484931220e9a13445ca861ba724d13b6b4566e290a4eecc2df348781",
+      "name": "Drown",
+      "author": "Mike Emilio x B3nte x HILAA",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 127.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "db2ab32928b0c21b545e865c154b6e3354ec89a69050783fd38a92edd191bdba",
+      "name": "A SACRIFICE TO SAVE YOU",
+      "author": "Efisio Cross",
+      "beatmapper": "The_Zhad",
+      "difficulty": 4,
+      "trackDuration": 308.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "8bbc931cd5bdb7e5cda9605d9869bc9c3e3e7a619d499f9b663e533787305c08",
+      "name": "Antidote",
+      "author": "Danimal",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 165.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "f6c29423e0bf993e038d91ca776e334fa7b64e3514e992871f43a461464a426f",
+      "name": "Ready To Go",
+      "author": "Republica",
+      "beatmapper": "Excession",
+      "difficulty": 3,
+      "trackDuration": 226.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "58c2899caead5fcd370c2beeb217f3efeeb07fbb117debc241bc2d96241ca44a",
+      "name": "C'mon Loretta",
+      "author": "Trixie Mattel",
+      "beatmapper": "Teebo",
+      "difficulty": 4,
+      "trackDuration": 172.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "0327bfafad5c83f1bfbaccbf7a2766713071005c6ae43e8847ff3f9d1b5e4e0f",
+      "name": "Selfish Man",
+      "author": "Flogging Molly",
+      "beatmapper": "Marinus & DonJuannelly",
+      "difficulty": 4,
+      "trackDuration": 178.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "524da77a0eb991fbee8548abeb39bd6352b72e9bf8bc222c457084f7b303d3c8",
+      "name": "Love Today",
+      "author": "Mika",
+      "beatmapper": "DonJuannelly",
+      "difficulty": 4,
+      "trackDuration": 236.0,
+      "addedTime": 1680447311
+    },
+    {
+      "hash": "6c83f48fe20e19b0ce1f67f6088339a4ce0a7c70b0768df19e3557fb61f67052",
+      "name": "Move Your Feet",
+      "author": "Junior Senior",
+      "beatmapper": "Alan-Smithee",
+      "difficulty": 4,
+      "trackDuration": 181.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "33065e4865e0605b517f8a4f1a0a2e985ff7417f5bd9810f52b070eeabca09b6",
+      "name": "Tightrope",
+      "author": "Young The Giant",
+      "beatmapper": "FRiGiDiGiTaL",
+      "difficulty": 4,
+      "trackDuration": 242.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "3a455eb9404a3d7194bdb58744550cec709d1351bdd79444f63f20e46c72c641",
+      "name": "The Feels",
+      "author": "TWICE",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 203.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "e0e6cc478bce9d901bdb4a5cb26e6cb084aa69a1a01d6250231936d94080e0d4",
+      "name": "Dola Re Dola",
+      "author": "Devdas",
+      "beatmapper": "RAPTOR",
+      "difficulty": 4,
+      "trackDuration": 397.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "94d40dc5ed0f8e3367205f83bbdc86de06478d759964e7545b50e46a393279cf",
+      "name": "Fireball",
+      "author": "Pitbull ft. John Ryan",
+      "beatmapper": "Emillion ",
+      "difficulty": 4,
+      "trackDuration": 239.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "eceffc60d7b19c9f862055ac0b2955a339676bec61c09ffa7c21f92431f938e4",
+      "name": "How Will I Know",
+      "author": "Whitney Houston",
+      "beatmapper": "Oneill",
+      "difficulty": 3,
+      "trackDuration": 215.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "29b2de71461abd8e098a627106fc2eb76191354ee509a9048eb5c3e14110c1af",
+      "name": "Letting Go",
+      "author": "Alan Fullmer",
+      "beatmapper": "Artanis",
+      "difficulty": 4,
+      "trackDuration": 237.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "1a9c878397d14beec6d9ca7128754674c64edb432e4c49b280e36f9447b7a228",
+      "name": "Joli Garcon",
+      "author": "Klaas",
+      "beatmapper": "Nova_Max",
+      "difficulty": 3,
+      "trackDuration": 146.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "5c1b89607617f51fc37dee0a37a898c0b6d3dd8976f685db7072031ae18aa3cd",
+      "name": "HELL SHALL PERISH",
+      "author": "Efisio Cross",
+      "beatmapper": "The_Zhad",
+      "difficulty": 4,
+      "trackDuration": 265.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "3e3a4ad36e0b8c1eb998c7d13e8e032fc3417496c5d564a93fb36730f2630d6c",
+      "name": "Bleed Colors (feat. Maia Swan)",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 228.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "741f07827500fd759c6d5176344a512b5a588d65f6c3befe7975759978fcfc23",
+      "name": "Somebody's Watching Me",
+      "author": " Chico Rose & 71 Digits",
+      "beatmapper": "CakeEaterPro",
+      "difficulty": 4,
+      "trackDuration": 189.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "e06e18245095430fa5fbc3ed5861aa71f011d0917d58f6391b3d43df6c679273",
+      "name": "Ghostbuster's Afterlife Theme (Soundtrack Remix)",
+      "author": "Yuri Krutikov",
+      "beatmapper": "CakeEaterPro",
+      "difficulty": 4,
+      "trackDuration": 379.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "315835f212d875ae0a287cb5df071a8104d08721328dd3e751208440a2fa1828",
+      "name": "Walame",
+      "author": "Omiki",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 354.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "ff20090466ce0f49688315c51f3cd4344c30fe9013d001ea69b007d3a755e4c6",
+      "name": "Trombone (Re-Mapped)",
+      "author": "Aron Chupa & Lil Sis Nora",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 168.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "c3e4c6bf4dccf0b51e32d8b665d841d6a7c536c3bf868e9ccbf10b90c3f8b0d0",
+      "name": "Million Dollar Baby",
+      "author": "Ava Max",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 194.0,
+      "addedTime": 1680448031
+    },
+    {
+      "hash": "6b75ad0951980258beb8b14ea7e120ab40ee37f3ece82b382f2aaeab38c7618c",
+      "name": "Better in Color",
+      "author": "Lizzo",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 135.0,
+      "addedTime": 1680460000
+    },
+    {
+      "hash": "87935e8789a0c4d51964cbd43c62466f6127dcf106ac9e6b9bce1255f07d9808",
+      "name": "Voices",
+      "author": "Brooks & KSHMR",
+      "beatmapper": "Melon4Dinner",
+      "difficulty": 4,
+      "trackDuration": 193.0,
+      "addedTime": 1680460059
+    },
+    {
+      "hash": "3776508d2e0f57b2951493ba316fc54f99a56dd0545b441fbc14b68626ca9e9c",
+      "name": "All Of It All",
+      "author": "Lukas Graham",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 180.0,
+      "addedTime": 1680460086
+    },
+    {
+      "hash": "5188deaed508514f2d0abb3b11704c1c61a920c1fb0067edaf39e6823844c0f7",
+      "name": "Green Green Grass",
+      "author": "George Ezra",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 173.0,
+      "addedTime": 1680460196
+    },
+    {
+      "hash": "3dba11e6d283b7cb8cf50357bdd928da07a59f9c51763ae7609455b4b1a1a77f",
+      "name": "Give That Wolf A Banana",
+      "author": "Subwoolfer",
+      "beatmapper": "Mondanzo",
+      "difficulty": 3,
+      "trackDuration": 170.0,
+      "addedTime": 1680460231
+    },
+    {
+      "hash": "7f8c25ed85d88257b03a6fc97f3699bde029e3a1a971919b48100d4361708d59",
+      "name": "Liquid Lunch",
+      "author": "Caro Emerald",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 219.0,
+      "addedTime": 1680460333
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "2022",
+  "description": "Personal favs from 2022",
+  "gradientTop": "#F91C84",
+  "gradientDown": "#7430CF",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#464956",
+  "creationDate": "1680344906"
+}

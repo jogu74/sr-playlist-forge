@@ -1,0 +1,679 @@
+{
+  "dataString": [
+    {
+      "hash": "ef544f10abca947e5dff028e637cad6a6274566962b7dcb007bdc0ade25d89c8",
+      "name": "Somebody To Love",
+      "author": "Queen",
+      "beatmapper": "Moonshine and Sodapie",
+      "difficulty": 4,
+      "trackDuration": 301.0,
+      "addedTime": 1736007680
+    },
+    {
+      "hash": "649634e3ba460774db77e61b800c8aa831ac6ef167c7a2415095c658454fe85b",
+      "name": "Here We Stand",
+      "author": "Hidden Citizens",
+      "beatmapper": "LaidBackAries, Zloym93",
+      "difficulty": 4,
+      "trackDuration": 190.0,
+      "addedTime": 1736007525
+    },
+    {
+      "hash": "4fba06c65a8554f46c47b0f92706f6dc1e0d402f8a5aff44c43ee5179abe6cd8",
+      "name": "Sailor Moon (A Tribute To My First Idol)",
+      "author": "Sorana",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 200.0,
+      "addedTime": 1737570169
+    },
+    {
+      "hash": "abaa5058918d09fffbb2dee69154ba05d03c7b8740d2986ffd47ad38fde6317c",
+      "name": "Better Days",
+      "author": "NEIKED, Mae Muller, Polo G",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 163.0,
+      "addedTime": 1737570183
+    },
+    {
+      "hash": "c4e60ba9d613b7d872a4d9de80ed3caed377a6598152790208eac477bc7e92b0",
+      "name": "Blank Space",
+      "author": "Taylor Swift",
+      "beatmapper": "Pico.iva",
+      "difficulty": 3,
+      "trackDuration": 235.0,
+      "addedTime": 1737570192
+    },
+    {
+      "hash": "95d027020f048930523857040fcefa95427d4c30133553018c3e9d0886776de0",
+      "name": "I Touch Myself",
+      "author": "The Divinyls",
+      "beatmapper": "TRINATRON",
+      "difficulty": 4,
+      "trackDuration": 232.0,
+      "addedTime": 1737570202
+    },
+    {
+      "hash": "b85e8c22fdd4ee0598edd21305d4548e8eb46fe69d495780e4322a2d1dc31345",
+      "name": "Greedy (Explicit)",
+      "author": "Tate McRae",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 133.0,
+      "addedTime": 1737570214
+    },
+    {
+      "hash": "0898ea220fe0fcdd1cdc136b546213205af1e863851c8a3aa05b2e4b395df954",
+      "name": "That's Right",
+      "author": "SwinGrowers",
+      "beatmapper": "JBlackCZ",
+      "difficulty": 3,
+      "trackDuration": 197.0,
+      "addedTime": 1737570236
+    },
+    {
+      "hash": "056b9e2aa9aad631f5ae74a421377eb85b0cc8cc155967e24f9ba3e85eb60c09",
+      "name": "Bad Intentions (faster version)",
+      "author": "Noeni ft. Nocturn",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 3,
+      "trackDuration": 169.0,
+      "addedTime": 1737570252
+    },
+    {
+      "hash": "4caf3af77f36d12922815fa2b33dc183db3694d35ed0333e9353ea71c0078258",
+      "name": "Hitchin' a Ride",
+      "author": "Green Day",
+      "beatmapper": "Marinus",
+      "difficulty": 4,
+      "trackDuration": 174.0,
+      "addedTime": 1737570304
+    },
+    {
+      "hash": "532091e4729e72fa72123363439697c7b0b544a1a6b2d9649dcddf5e86b7a249",
+      "name": "How We Win",
+      "author": "FWLR",
+      "beatmapper": "FINAL BOSS, Sodapie",
+      "difficulty": 4,
+      "trackDuration": 217.0,
+      "addedTime": 1737570392
+    },
+    {
+      "hash": "d40caaaa3c7be83b5fc594b71ca1d44fcb79df885ff4530cce1997e18e41617b",
+      "name": "Come Alive",
+      "author": "Alice Chater",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 202.0,
+      "addedTime": 1737570509
+    },
+    {
+      "hash": "3e0249d8d184eee7d6de38f22e48272c04c33e3b61178e0dfcfc821eff162670",
+      "name": "Higher",
+      "author": "Michael Bublé",
+      "beatmapper": "Junk Box and DonJuanNelly",
+      "difficulty": 3,
+      "trackDuration": 187.0,
+      "addedTime": 1739965148
+    },
+    {
+      "hash": "e7abfab0da7db8f61c120773a522488744ef33fd6c591daeb1c50a4a5c08c3f2",
+      "name": "Austin (Explicit)",
+      "author": "Dasha",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 170.0,
+      "addedTime": 1740328409
+    },
+    {
+      "hash": "708981eac9b36f0ce391723ad9f9ab6fb20803a0dbcffefd8a08ef88ff21813f",
+      "name": "Hypnotized (feat. Ellie Goulding) ",
+      "author": "Anyma",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 182.0,
+      "addedTime": 1740328440
+    },
+    {
+      "hash": "ce08cd2a4c56c200eba77ea53337f77d9a04a3f93f1b4c22b9aa7a264e6899bd",
+      "name": "My Oh My (ft. Bebe Rexha & Tove Lo)",
+      "author": "Kylie Minogue",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 183.0,
+      "addedTime": 1740408774
+    },
+    {
+      "hash": "62b1fadfa0cceca1c87f9d1f71f4c88b6000cb094976a9fe83a524e2f11f8e26",
+      "name": "Gimme What I Want",
+      "author": "Miley Cyrus",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 154.0,
+      "addedTime": 1740408802
+    },
+    {
+      "hash": "18415d0d7f255f6b976948948b852c758460fe065a78ccc4ec632766240eabf8",
+      "name": "Kiss From A Rose",
+      "author": "Seal",
+      "beatmapper": "Michicat",
+      "difficulty": 4,
+      "trackDuration": 290.0,
+      "addedTime": 1740408819
+    },
+    {
+      "hash": "dcd9659e9190261383f3ca14e066a546e73d916aefc23da2c610c58152950756",
+      "name": "Right (Explicit)",
+      "author": "Morgan St. Jean",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 153.0,
+      "addedTime": 1740408839
+    },
+    {
+      "hash": "d729cdd7ce21621f300d290a2518a1f526e4d87cd08a89984a679165c89f872d",
+      "name": "MONSTER",
+      "author": "Reol",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 203.0,
+      "addedTime": 1740408918
+    },
+    {
+      "hash": "4a23869c8393fa22b20c696a6ecb174f2b3cfe99c64b4f195810b58c438371ea",
+      "name": "Lost In Space ",
+      "author": "Emmit Fenn",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 220.0,
+      "addedTime": 1740408948
+    },
+    {
+      "hash": "e6565f1e047640152324cf3a884873a029253c0d09580499b02cb5487edc28f6",
+      "name": "A Bar Song (Tipsy)(Explicit)",
+      "author": "Shaboozey",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 172.0,
+      "addedTime": 1743344486
+    },
+    {
+      "hash": "eb11dbc9d5fcef1abd561f691d3cdc9dd8c4e587086df149c71bfe5d946ba6b6",
+      "name": "Unity ",
+      "author": "for KING + COUNTRY",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 209.0,
+      "addedTime": 1743344759
+    },
+    {
+      "hash": "b4f59885bf3593b84d8c59f724c7da193646890c7a3b8076b3094cdd06e3e01c",
+      "name": "Personal Effects",
+      "author": "Chromeo",
+      "beatmapper": "c4103",
+      "difficulty": 4,
+      "trackDuration": 243.0,
+      "addedTime": 1743344552
+    },
+    {
+      "hash": "4f84d514e1e4b8f5baa1ec70cddb600d3713b0e9688197e750cfa4973d3fc883",
+      "name": "Getting Prettier (After)",
+      "author": "SixBomb",
+      "beatmapper": "An Underdog",
+      "difficulty": 3,
+      "trackDuration": 184.0,
+      "addedTime": 1743344596
+    },
+    {
+      "hash": "155e9bdaa130b70870d28334f9f0d34a8b7a2445ec78af5624e6a44b9fa9c282",
+      "name": "Best_Of_2020_Megamashup",
+      "author": "Djs_From_Mars",
+      "beatmapper": "Nancy.85 feat lyraflow.na.li",
+      "difficulty": 4,
+      "trackDuration": 314.0,
+      "addedTime": 1743344643
+    },
+    {
+      "hash": "6bc6dd4b37d309fa7a9b69e9d57286b7bb66e3a5e028a188f9d5faecc8722ef9",
+      "name": "We Didn't Start The Fire",
+      "author": "Fall Out Boy",
+      "beatmapper": "Nancy.85 feat lyraflow.na.li",
+      "difficulty": 4,
+      "trackDuration": 215.0,
+      "addedTime": 1743344656
+    },
+    {
+      "hash": "83c18943cc35a4c185aa772470eebd08724ca9cd647baff9cd8e411c42d7efc8",
+      "name": "Umbrella (Single Edit)",
+      "author": "The Baseballs",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 190.0,
+      "addedTime": 1743344667
+    },
+    {
+      "hash": "01888883ac15586f3f346622c86c689e9dbf1f2fd55114a44ab56cfe5319f432",
+      "name": "Something to Believe in",
+      "author": "Avalan Rokston",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 146.0,
+      "addedTime": 1743344686
+    },
+    {
+      "hash": "3b0f50c7e0af796efc8e4ff629180a33185b127cd518b7796cb37f762dbce42e",
+      "name": "Mission Impossible Theme (short version)",
+      "author": "Lalo Schifrin",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 3,
+      "trackDuration": 168.0,
+      "addedTime": 1743344785
+    },
+    {
+      "hash": "b8c9c05b1146a9cb4bfcf538e005e8c183969ce15cbe3320e6cc52f3b4c02124",
+      "name": "Lights Camera Action",
+      "author": "Kylie Minogue",
+      "beatmapper": "Bezmondo",
+      "difficulty": 3,
+      "trackDuration": 165.0,
+      "addedTime": 1743344799
+    },
+    {
+      "hash": "bbfc2b06e1efee5f00f4a93740e31256bc4f8874ae9450736a6bbd13299cdfb8",
+      "name": "Light It Up Funk",
+      "author": "Dr Møb",
+      "beatmapper": "Ceedge66rus",
+      "difficulty": 4,
+      "trackDuration": 102.0,
+      "addedTime": 1746202653
+    },
+    {
+      "hash": "60d8acd48198de69b8bb6e0a9bf45a6b614d0f780a8b93ba1a7539f4f2a76e94",
+      "name": "Nova",
+      "author": "ExtremeCalibre",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 161.0,
+      "addedTime": 1746202700
+    },
+    {
+      "hash": "3431b9190e5b84855a808356be891fc01d8d8d420264ac9edf5f1825551f7199",
+      "name": "Anxiety ",
+      "author": "Doechii",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 251.0,
+      "addedTime": 1746202713
+    },
+    {
+      "hash": "b0ad289ce1f90bab8af763f6a1c718edb14ce7fde57c11670503f7302f594fff",
+      "name": "Before you Disappear",
+      "author": "Longwave",
+      "beatmapper": "Artanis, ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 232.0,
+      "addedTime": 1746202741
+    },
+    {
+      "hash": "8f314ee520b5a2b73f439f5f3eeb2e9da8e251d6c105a0e62dc1cca6d8174d62",
+      "name": "Never Let Me Down Again",
+      "author": "Depeche Mode",
+      "beatmapper": "Mightily Oats",
+      "difficulty": 4,
+      "trackDuration": 263.0,
+      "addedTime": 1746202756
+    },
+    {
+      "hash": "2418c7034c4f579994680e5329e9c8bbfb2ca44725157d98d1f0e8fcb1a8ac09",
+      "name": "Shallow Water",
+      "author": "Elderbrook",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 205.0,
+      "addedTime": 1746202798
+    },
+    {
+      "hash": "dfe829706f431537312281281eaaf1679e9d8c376d2312bd4adb5f1e8836970c",
+      "name": "Bad Feeling (Oompa Loompa) Explicit",
+      "author": "Jagwar Twin",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 135.0,
+      "addedTime": 1746202812
+    },
+    {
+      "hash": "87590bb9e8d992b40ad5af76d0b4755f79bc7963c75c092e002e93d7a02a280d",
+      "name": "The Hampsterdance Song",
+      "author": "Hampton the Hampster",
+      "beatmapper": "Donbackinus Oatshine AKA Arienus Doonily",
+      "difficulty": 4,
+      "trackDuration": 217.0,
+      "addedTime": 1746202827
+    },
+    {
+      "hash": "58e4a05339705f68de043f759b7ca02291f6031d53d6d693578beb1b7c396580",
+      "name": "Shut up and Dance",
+      "author": "Sophie and the Giants",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 180.0,
+      "addedTime": 1749370414
+    },
+    {
+      "hash": "87b0ba6c920d78301e5d1c99ad7976be4cecab1d5da73780df6ecb36c25eb834",
+      "name": "Strangers",
+      "author": "Kenya Grace ",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 173.0,
+      "addedTime": 1749370451
+    },
+    {
+      "hash": "2358f630ac742df90cbe2ac54fe317cba066ad4e8e4cf6ca8cd6168e5ea265ae",
+      "name": "Smells Like Teen Spirit",
+      "author": "Nirvana",
+      "beatmapper": "An Underdog",
+      "difficulty": 3,
+      "trackDuration": 301.0,
+      "addedTime": 1749370496
+    },
+    {
+      "hash": "322ca629ab918186883d90adb9f0ed78766c0d20bf1840d643728c2380d15780",
+      "name": "Sharks",
+      "author": "Imagine Dragons",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 4,
+      "trackDuration": 193.0,
+      "addedTime": 1749370508
+    },
+    {
+      "hash": "9a7d0c4a84440589aef45427505b0ea48b40e9e6854049a9b34b536bc8b3da86",
+      "name": "Not Dead Yet ",
+      "author": "Devora",
+      "beatmapper": "SpaceTrace",
+      "difficulty": 4,
+      "trackDuration": 256.0,
+      "addedTime": 1749370589
+    },
+    {
+      "hash": "222fd935cf3a8ca3064fb15350c52a7703f2b56b4cc363f670ea5f491e14e162",
+      "name": "Texas Hold 'Em (Explicit) ",
+      "author": "Beyoncé",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 3,
+      "trackDuration": 236.0,
+      "addedTime": 1749370638
+    },
+    {
+      "hash": "16590ebf43a11dc2bca04663768df57a374ecd5cc1b09277b3cc887a99db4597",
+      "name": "Zombie",
+      "author": "The Rock Orchestra",
+      "beatmapper": "Ceedge66",
+      "difficulty": 4,
+      "trackDuration": 301.0,
+      "addedTime": 1754748653
+    },
+    {
+      "hash": "39075c0fdf525c2fa1d784abd1ebd5201d2cf258b1d84a887d758fe01832576b",
+      "name": "Lay all your Love On Me",
+      "author": "Mamma Mia! Soundtrack",
+      "beatmapper": "DragonFord",
+      "difficulty": 2,
+      "trackDuration": 269.0,
+      "addedTime": 1754748669
+    },
+    {
+      "hash": "503e7df1d3ba16ba101cbedc4f6a9bde35d0d8776f89eaaa7085828a70ae5431",
+      "name": "Press Start",
+      "author": "Kola Kid",
+      "beatmapper": "Ceedge66",
+      "difficulty": 3,
+      "trackDuration": 40.0,
+      "addedTime": 1754748688
+    },
+    {
+      "hash": "68d51e4f78e2fcb0b4c8ac096e75b27d6ad047dcde291474067d5245368cd35b",
+      "name": "Tarantella",
+      "author": "Gabry Ponte, KEL",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 2,
+      "trackDuration": 147.0,
+      "addedTime": 1754748755
+    },
+    {
+      "hash": "1018555c4d3c2fb6d06c0db5891c2fe91c89b642c56c1a2317fe2bea2ff79007",
+      "name": "Club Can't Handle Me (feat. David Guetta) - From the Step Up 3D Soundtrack",
+      "author": "Flo Rida",
+      "beatmapper": "SPIRITALSREAL",
+      "difficulty": 2,
+      "trackDuration": 234.0,
+      "addedTime": 1754748784
+    },
+    {
+      "hash": "79ce9ae83b015c252a0ae01deb4d35d478d6b68a0fd1382698a906907c5f7226",
+      "name": "Airwolf Star Trek Mashup",
+      "author": "CLMC",
+      "beatmapper": "DragonFord",
+      "difficulty": 3,
+      "trackDuration": 191.0,
+      "addedTime": 1757527410
+    },
+    {
+      "hash": "bfb13501aa9b8302948e3d2c17932bbd342bb91f0530299606c259e8de35b09e",
+      "name": "Whoopedoo",
+      "author": "Balduin ft Alanna Lyes",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 4,
+      "trackDuration": 168.0,
+      "addedTime": 1757527438
+    },
+    {
+      "hash": "cc4b3d681fddc50162ff71adf6aecb27a02146428fea8775b6cb66f5b514a27d",
+      "name": "Born To Be Alive",
+      "author": "Patrick Hernandez",
+      "beatmapper": "DragonFord",
+      "difficulty": 2,
+      "trackDuration": 188.0,
+      "addedTime": 1757527456
+    },
+    {
+      "hash": "cad122509efb06fcc632c87c988114eae1027b3166b951be66eb8d244a07a00e",
+      "name": "Praise (Christian Song)",
+      "author": "Elevation Worship",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 241.0,
+      "addedTime": 1757527465
+    },
+    {
+      "hash": "5a1b88818ae6a1dde4a2841fd6e4dec8658454e608c8d9a91663cc1b443dc354",
+      "name": "Weightlessness",
+      "author": "Bobina",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 216.0,
+      "addedTime": 1757527475
+    },
+    {
+      "hash": "37e9aa3d93aa0b7dbbed19a7a7748b86f8bb6b1c1ff9092ea06393cdc9a10d07",
+      "name": "Swamp Thing",
+      "author": "Pegboard Nerds",
+      "beatmapper": "FINAL BOSS",
+      "difficulty": 4,
+      "trackDuration": 263.0,
+      "addedTime": 1757527491
+    },
+    {
+      "hash": "77a3b07a85b24ca94d35886d8c706399d3234103195f30fd010f20f183638d8a",
+      "name": "Up All Night (Indy Remix)",
+      "author": "Owl City",
+      "beatmapper": "FINAL BOSS",
+      "difficulty": 4,
+      "trackDuration": 325.0,
+      "addedTime": 1757527550
+    },
+    {
+      "hash": "579f9fecc11fa31374b1eba6155670bd849b8d1a1118218aeab64ce564fec3ae",
+      "name": "Mambo Rap",
+      "author": "Parov Stelar",
+      "beatmapper": "DragonFord",
+      "difficulty": 2,
+      "trackDuration": 203.0,
+      "addedTime": 1757527564
+    },
+    {
+      "hash": "8a2bba8ed48f671ee2f657568db1114e97bc4e2a8d5b5a473902886ec837cd56",
+      "name": "Mary You",
+      "author": "Bruno Mars",
+      "beatmapper": "DragonFord",
+      "difficulty": 2,
+      "trackDuration": 230.0,
+      "addedTime": 1757527575
+    },
+    {
+      "hash": "36077d66ebb6a83280acca65e8a045df7def935745660c0b2ba9852b9d3bfff5",
+      "name": "Whatchugot (Pisk Remix)",
+      "author": "Caro Emerald, Pisk",
+      "beatmapper": "Zolkora",
+      "difficulty": 1,
+      "trackDuration": 201.0,
+      "addedTime": 1760771913
+    },
+    {
+      "hash": "389633ca464a15165fa6bea3bcd53e66546bef327e2965aebd977325002a78e1",
+      "name": "1+1",
+      "author": "Sia",
+      "beatmapper": "MickeyFL13",
+      "difficulty": 5,
+      "trackDuration": 180.0,
+      "addedTime": 1760771947
+    },
+    {
+      "hash": "cbb59255ae88ddaba8522bc85692ec983a4f08fea73d3a828056926d3455d71d",
+      "name": "The Pink Panther Theme",
+      "author": "Henry Mancini",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 2,
+      "trackDuration": 131.0,
+      "addedTime": 1760771989
+    },
+    {
+      "hash": "e4d9c5a6eae9f5b78ae39a36c40642adc1dbb981843f5e0a1747b8a8018c4da2",
+      "name": "Fame",
+      "author": "Irene Cara",
+      "beatmapper": "Attack Dragon",
+      "difficulty": 2,
+      "trackDuration": 235.0,
+      "addedTime": 1760772008
+    },
+    {
+      "hash": "fe288cc46fb08470bd6a259a2686d1bf9a67d5a78499b115c671f60d35f20afc",
+      "name": "My Patch",
+      "author": "Jim Noir",
+      "beatmapper": "Midnight Wave",
+      "difficulty": 3,
+      "trackDuration": 244.0,
+      "addedTime": 1760772024
+    },
+    {
+      "hash": "22736e7ba8e62444690956e939aaa3b0668224068eb2126c8916fc657a58052e",
+      "name": "Something in the Water",
+      "author": "Brooke Fraser",
+      "beatmapper": "Midnight Wave",
+      "difficulty": 3,
+      "trackDuration": 183.0,
+      "addedTime": 1760772041
+    },
+    {
+      "hash": "f4c72025471a6d1b3cbae980afdeae8438b5d0860cfd104270457cf5c69ff7a5",
+      "name": "Right Round",
+      "author": "Flo Rida ft Kesha",
+      "beatmapper": "OnlySpins",
+      "difficulty": 5,
+      "trackDuration": 207.0,
+      "addedTime": 1760772069
+    },
+    {
+      "hash": "ae1ef068185d895cb018ef5c32173974bf597e72fd44751fc64df450e4fc8879",
+      "name": "Feel The Vibe",
+      "author": "Kill The Noise, Trivecta & Doktor",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 205.0,
+      "addedTime": 1760772083
+    },
+    {
+      "hash": "b0978a81e7e2a24bcdab37a165229a774d07def014c33d68e0a58769aae8c721",
+      "name": "Golden",
+      "author": "HUNTR/X",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 194.0,
+      "addedTime": 1760772129
+    },
+    {
+      "hash": "13afef4cf03ba16b8a59ce4c590d52fec277016ce42112022a36703f33ec38ce",
+      "name": "Hypnotized",
+      "author": "Purple Disco Machine",
+      "beatmapper": "Attack Dragon",
+      "difficulty": 2,
+      "trackDuration": 197.0,
+      "addedTime": 1760772185
+    },
+    {
+      "hash": "9bff729dd232e3033a37a4c38144de1926a9ef0f188703554dc2c4ee7def9507",
+      "name": "Frog Rave",
+      "author": "SunoWrestler25",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 5,
+      "trackDuration": 154.0,
+      "addedTime": 1760772200
+    },
+    {
+      "hash": "c3c92cfd8359bebbdff736de9242169a477172aefcf9a56e1ca28676cd13d589",
+      "name": "Something On My Mind",
+      "author": "Purple Disco Machine (Remix)",
+      "beatmapper": "Boundl3ss & Attack Dragon",
+      "difficulty": 2,
+      "trackDuration": 233.0,
+      "addedTime": 1764868856
+    },
+    {
+      "hash": "3384731eeacf24b18793ea27cddbbabfd25a8d097af7217897b949b274cda774",
+      "name": "Technologic",
+      "author": "Daft Punk",
+      "beatmapper": "OnlySpins",
+      "difficulty": 5,
+      "trackDuration": 169.0,
+      "addedTime": 1764868869
+    },
+    {
+      "hash": "2d49825daf6eb5c9a436f7aa0d0073bdaae32a59d52529b319cfa983ec4b676b",
+      "name": "Lovers on the Sun",
+      "author": "David Guetta feat. Sam Martin",
+      "beatmapper": "Stevix",
+      "difficulty": 4,
+      "trackDuration": 205.0,
+      "addedTime": 1764868884
+    },
+    {
+      "hash": "e24049d2de654a070609ea6de0affcd790e802291a67fd30ba6cf71dae24196c",
+      "name": "Sweet Design",
+      "author": "Sia",
+      "beatmapper": "MickeyFL13",
+      "difficulty": 5,
+      "trackDuration": 147.0,
+      "addedTime": 1764868904
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "2025",
+  "description": "Sammanslagen 2025-playlist från månadslistor: Januari, Februari, Mars, April, Maj, Juni, Juli, Augusti, November, December. Tot",
+  "gradientTop": "#EBF700",
+  "gradientDown": "#5D4E00",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#616D5D",
+  "creationDate": "1767706973"
+}

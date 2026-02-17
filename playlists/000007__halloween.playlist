@@ -1,0 +1,85 @@
+{
+  "dataString": [
+    {
+      "hash": "f1491e512d5c8e171a90a3d5bedf217b84d7369a2249e5185e6c2960a3115b9e",
+      "name": "Grim Grinning Ghosts",
+      "author": "Glenn Gatsby, Ashley Slater",
+      "beatmapper": "Pico.iva",
+      "difficulty": 2,
+      "trackDuration": 186.0,
+      "addedTime": 1730469457
+    },
+    {
+      "hash": "b864e661997696f902777130d25c3f598a6344c1935b5760c4e7e20fb0860bca",
+      "name": "Crypteque",
+      "author": "Danny Baranowsky",
+      "beatmapper": "Moonshine",
+      "difficulty": 4,
+      "trackDuration": 167.0,
+      "addedTime": 1730469480
+    },
+    {
+      "hash": "500c27be8582a8a7fe8dee8fc4b1eb5990cbcf43bc322cf5df56964f06cb8af4",
+      "name": "Insane",
+      "author": "Black Gryph0n & Baasik",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 159.0,
+      "addedTime": 1730469489
+    },
+    {
+      "hash": "df13d9d270bb9c251b0159b89035fb6feae50173d584770b25b5f571847a7ec3",
+      "name": "Thriller",
+      "author": "Scandroid",
+      "beatmapper": "KuritsaDBS",
+      "difficulty": 3,
+      "trackDuration": 343.0,
+      "addedTime": 1730469638
+    },
+    {
+      "hash": "e06e18245095430fa5fbc3ed5861aa71f011d0917d58f6391b3d43df6c679273",
+      "name": "Ghostbuster's Afterlife Theme (Soundtrack Remix)",
+      "author": "Yuri Krutikov",
+      "beatmapper": "CakeEaterPro",
+      "difficulty": 4,
+      "trackDuration": 378.0,
+      "addedTime": 1730469785
+    },
+    {
+      "hash": "741f07827500fd759c6d5176344a512b5a588d65f6c3befe7975759978fcfc23",
+      "name": "Somebody's Watching Me",
+      "author": " Chico Rose & 71 Digits",
+      "beatmapper": "CakeEaterPro",
+      "difficulty": 4,
+      "trackDuration": 188.0,
+      "addedTime": 1730469798
+    },
+    {
+      "hash": "5c1b89607617f51fc37dee0a37a898c0b6d3dd8976f685db7072031ae18aa3cd",
+      "name": "HELL SHALL PERISH",
+      "author": "Efisio Cross",
+      "beatmapper": "The_Zhad",
+      "difficulty": 4,
+      "trackDuration": 264.0,
+      "addedTime": 1730469817
+    },
+    {
+      "hash": "f5d0733fdf2833e244cc057d0ea68b0fdb585bca6655c914272be7518ed10e92",
+      "name": "Monument (The Inevitable End Version)",
+      "author": "Röyksopp feat. Robyn",
+      "beatmapper": "Fasty",
+      "difficulty": 3,
+      "trackDuration": 303.0,
+      "addedTime": 1730469878
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "halloween",
+  "description": "New Playlist",
+  "gradientTop": "#241D18",
+  "gradientDown": "#5D3582",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#84873B",
+  "creationDate": "1730469439"
+}

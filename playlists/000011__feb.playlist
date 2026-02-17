@@ -1,0 +1,94 @@
+{
+  "dataString": [
+    {
+      "hash": "91e47c3aec55d6daee77d3d422db2c059db7e8d2c0065ced1660c953595caa1c",
+      "name": "The Floor Is Lava",
+      "author": "NIVIRO",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 198.0,
+      "addedTime": 1769962598
+    },
+    {
+      "hash": "43a887832471f009fad7b97bec87711d6f9e7d05ede5cf9673ae44b544bc791a",
+      "name": "Storm (rock version)",
+      "author": "Antonio Vivaldi",
+      "beatmapper": "Pico.iva",
+      "difficulty": 5,
+      "trackDuration": 233.0,
+      "addedTime": 1769962626
+    },
+    {
+      "hash": "15af5f1449c9c8d69594d38867dccf25a9c99c860dbe0e0123daedfc86eccaa2",
+      "name": "Lights Off (Feat Anduze) Remastered",
+      "author": "Parov Stelar",
+      "beatmapper": "XionsProphecy",
+      "difficulty": 4,
+      "trackDuration": 282.0,
+      "addedTime": 1769962636
+    },
+    {
+      "hash": "66d522b1c9205a70b0b44f1ff2b2531076fa8545ecd6d3800b77bc7a1496aa44",
+      "name": "After Dark Remastered",
+      "author": "Essenger",
+      "beatmapper": "XionsProphecy",
+      "difficulty": 5,
+      "trackDuration": 227.0,
+      "addedTime": 1769962659
+    },
+    {
+      "hash": "1199f4d8bfca8e965ed5fc43187e56cb14722d105809bd1209d0321e0ee34857",
+      "name": "MUTT",
+      "author": "Leon Thomas",
+      "beatmapper": "JStillxSKS",
+      "difficulty": 3,
+      "trackDuration": 193.0,
+      "addedTime": 1769962669
+    },
+    {
+      "hash": "60614b9942f85eb45dcf98633774dce9d090614ba8d22bafd23b9a58988dd9ba",
+      "name": "spite",
+      "author": "Charlotte Sands",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 189.0,
+      "addedTime": 1769962684
+    },
+    {
+      "hash": "2ea5b9e0c2111cc58ba7b6312af81da0ab29e35697cda4a9f2bb69b4e8a50611",
+      "name": "Ghost Town",
+      "author": "Purple Disco Machine",
+      "beatmapper": "ATTACK DRAGON AND SOFA KING",
+      "difficulty": 4,
+      "trackDuration": 229.0,
+      "addedTime": 1769962702
+    },
+    {
+      "hash": "72bfe9256c965418779be46b91843983ba71a23a343b5edc09b583093e538186",
+      "name": " RESTART THE GAME",
+      "author": "Klingande",
+      "beatmapper": "ATTACK DRAGON",
+      "difficulty": 2,
+      "trackDuration": 192.0,
+      "addedTime": 1769962770
+    },
+    {
+      "hash": "3261ad7a845307dffbdc0abbc4b09e4fb48223802ad7b2f4b3c0c046a24c0cc0",
+      "name": "Turning My Life Around",
+      "author": "Ella Hunt - Malcom Cumming",
+      "beatmapper": "gordo1234567890",
+      "difficulty": 3,
+      "trackDuration": 232.0,
+      "addedTime": 1769962796
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "feb",
+  "description": "New Playlist",
+  "gradientTop": "#449ED5",
+  "gradientDown": "#080D10",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#392727",
+  "creationDate": "1769962567"
+}

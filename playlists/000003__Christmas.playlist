@@ -1,0 +1,121 @@
+{
+  "dataString": [
+    {
+      "hash": "4f61f340c6214a918e98b6256be3bd068d954f3e3896c37cd68336795a59e6f7",
+      "name": "\rWinter Song (feat. Cynthia Erivo)",
+      "author": "Leslie Odom, Jr.",
+      "beatmapper": "bonnasaurusrex",
+      "difficulty": 3,
+      "trackDuration": 226.0,
+      "addedTime": 1671351242
+    },
+    {
+      "hash": "9e48cc221ab80d8a813c7c43d4ee3ec24e740fc0842f294e82ade9e5eaec0f9d",
+      "name": "Introduction to the snow",
+      "author": "Miracle Musical",
+      "beatmapper": "Wonderful",
+      "difficulty": 3,
+      "trackDuration": 104.0,
+      "addedTime": 1671383337
+    },
+    {
+      "hash": "bfbbfe4aa45f72974579f72cf8025dff7ae09c7057460842cf08fc12487f5182",
+      "name": "The Most Wonderful Time of the Year",
+      "author": "Brian McKnight",
+      "beatmapper": "Fasty",
+      "difficulty": 4,
+      "trackDuration": 103.0,
+      "addedTime": 1671383606
+    },
+    {
+      "hash": "0cacfca0ffc630785ea0e72f73bd53199bd4e7505a3c8b5694030ea07a6573a6",
+      "name": "Wizards In Winter",
+      "author": "Trans-Siberian Orchestra",
+      "beatmapper": "Ris",
+      "difficulty": 3,
+      "trackDuration": 185.0,
+      "addedTime": 1671383626
+    },
+    {
+      "hash": "7faf8bdc516fe72a3c4dbeed4d74d0d4ad2167d248dc863a281633d3c5bb5cae",
+      "name": "Carol of the Cartels",
+      "author": "Bossfight",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 270.0,
+      "addedTime": 1671383664
+    },
+    {
+      "hash": "cd9b3807c0ac410375d191c6510e5171e98fc0d79dc372b6536fa7bf4ade3fbe",
+      "name": "Sleigh Ride",
+      "author": "Leroy Anderson",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 167.0,
+      "addedTime": 1671383710
+    },
+    {
+      "hash": "4a1c6b4b8f44f19fa63b211f3d01fb8189cd2d4da4b04e2537ba5253c2e9e6a1",
+      "name": "The 12 Days of Christmas",
+      "author": "Straight No Chaser",
+      "beatmapper": "RedPanda",
+      "difficulty": 5,
+      "trackDuration": 180.0,
+      "addedTime": 1672130440
+    },
+    {
+      "hash": "c62d8a4eefed1983fb7e8cd8893949b32fca6e1cbf388d371e9e2fe6934e699d",
+      "name": "Sleigh All Day",
+      "author": "All Talk",
+      "beatmapper": "NiceleyDone",
+      "difficulty": 4,
+      "trackDuration": 129.0,
+      "addedTime": 1716614127
+    },
+    {
+      "hash": "5018df26d6000dd7e240867b07f3b57290c9ae0a9c4dd98ce9e8b81c3631fa93",
+      "name": "Adeste Fideles",
+      "author": "Dan Vasc",
+      "beatmapper": "70-80s Rocker",
+      "difficulty": 4,
+      "trackDuration": 186.0,
+      "addedTime": 1734262833
+    },
+    {
+      "hash": "b25d0dc05255e366020bba08a425c60be46a5f699a85042e83dcc5e1b8ce5aa8",
+      "name": "Gloria (Christmas Collection)",
+      "author": "Michael W. Smith",
+      "beatmapper": "Gordo1234567890",
+      "difficulty": 2,
+      "trackDuration": 303.0,
+      "addedTime": 1734262864
+    },
+    {
+      "hash": "e03d48844ca7e7d377fb88f1de30e92135531e3b38d28f9a0b6487c9f39b431d",
+      "name": "1 Första Advent",
+      "author": "1 John Lundvik",
+      "beatmapper": "Oleg",
+      "difficulty": 0,
+      "trackDuration": 215.0,
+      "addedTime": 1737570529
+    },
+    {
+      "hash": "2c81570aeaa5f6f0166f3ff8e810eb8f5582503a4f7ecf8ed0139df463c400e1",
+      "name": "Yellin' At The Xmas Tree",
+      "author": "Billy Idol",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 256.0,
+      "addedTime": 1767257615
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "Christmas",
+  "description": "new playlist",
+  "gradientTop": "#DDD8BF",
+  "gradientDown": "#E75193",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#0F9E88",
+  "creationDate": "1671351211"
+}

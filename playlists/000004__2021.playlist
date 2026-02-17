@@ -1,0 +1,427 @@
+{
+  "dataString": [
+    {
+      "hash": "c503665c20266f175c53e6a80dcd77b958312bc8ea6dbc1124f4aaa0bfc8a010",
+      "name": "Don't Stop Me Now",
+      "author": "Queen",
+      "beatmapper": "Teebo",
+      "difficulty": 4,
+      "trackDuration": 219.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "ce80cfb42ca7f3153a5780a70cf5985b804f848fb0cfcffde3c1cfcf50501dc1",
+      "name": "Uptown Funk",
+      "author": "Mark Ronson feat. Bruno Mars",
+      "beatmapper": "ICHDerHorst(Remapped from BennyDaBeast)",
+      "difficulty": 2,
+      "trackDuration": 271.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "ec9f92b1676f3c4f9a6673340acafe19a394e495b2a85faad66f2786c5969dcf",
+      "name": "Hit the Road Jack (Electro Swing)",
+      "author": "Wolfgang Lohr",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 159.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "17697184d4677dddc1e54b92d531c6f2740d0c2297b94d784df83c4c6559fc72",
+      "name": "Walking On Sunshine",
+      "author": "Katrina And The Waves",
+      "beatmapper": "Ris",
+      "difficulty": 3,
+      "trackDuration": 215.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "b2c0f7f467593c30f43245e294b2ce2b17b4d9d43777c515f047e02cb84c88f7",
+      "name": "You Spin Me Round",
+      "author": "Dead Or Alive",
+      "beatmapper": "Teebo",
+      "difficulty": 3,
+      "trackDuration": 198.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "59176962af98cdcbbc1d2b55cc62b259959dc13a3e24d6a546c775b94aa1091f",
+      "name": "CAN'T STOP THE FEELING!",
+      "author": "Justin Timberlake",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 237.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "2e34cc8d90a7b71871ac762051665c110ecf7269d75e8ede2ab71888ddee33e8",
+      "name": "Timber",
+      "author": "Pitbull",
+      "beatmapper": "Rio (Remapped from Scottie2Pottie)",
+      "difficulty": 3,
+      "trackDuration": 203.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "f75e63d88a93d85203755550e541884477b5ca422c759f3ba417e0590d10bfac",
+      "name": "Believer",
+      "author": "Imagine Dragons",
+      "beatmapper": "Teebo",
+      "difficulty": 3,
+      "trackDuration": 206.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "4026867ad36f3f8b6d4107fc5cde0892c6685301ddce7d5c66699ca677721578",
+      "name": "Safe and Sound",
+      "author": "Capital Cities",
+      "beatmapper": "Teebo",
+      "difficulty": 3,
+      "trackDuration": 195.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "f8d4ac264f5f36365952592829ea53b94c6498199d471deb1d7855c0537c8faf",
+      "name": "Empty Streets",
+      "author": "Scandroid",
+      "beatmapper": "KurtisaDBS",
+      "difficulty": 4,
+      "trackDuration": 303.0,
+      "addedTime": 1680341828
+    },
+    {
+      "hash": "df13d9d270bb9c251b0159b89035fb6feae50173d584770b25b5f571847a7ec3",
+      "name": "Thriller",
+      "author": "Scandroid",
+      "beatmapper": "KuritsaDBS",
+      "difficulty": 3,
+      "trackDuration": 343.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "42355ace6a8aa9b2ae40a11d791e9cdcef6d00547ab131ff59c2c30a2e5b1c1b",
+      "name": "Dance Monkey",
+      "author": "Tones and I",
+      "beatmapper": "Fasty",
+      "difficulty": 5,
+      "trackDuration": 216.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "be7b885ce5c505cfd707601ef18d22f18de2092b4886dd0e0d3b5b837b0d72ec",
+      "name": "Moves Like Jagger",
+      "author": "Maroon 5",
+      "beatmapper": "Oneill (Teebo - Master)",
+      "difficulty": 4,
+      "trackDuration": 204.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "042ab703cf8b2a774215473c23ba116a62ecd713680c62b13109876adfaa0698",
+      "name": "Blinding Lights",
+      "author": "The Weeknd",
+      "beatmapper": "Fasty",
+      "difficulty": 5,
+      "trackDuration": 202.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "bea80ecc76bf0a598b702b8e117d7a2ec122516998959242818e25952eb746d2",
+      "name": "No Money",
+      "author": "Galantis",
+      "beatmapper": "Fasty",
+      "difficulty": 5,
+      "trackDuration": 191.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "64d4d7b299bb00beef7ff9d66a5268d7e4118e22ab4d857301fe51ddfc1b7dd5",
+      "name": "New Rules",
+      "author": "Dua Lipa",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 5,
+      "trackDuration": 210.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "eeb40c00ad4d5618cf81a4baf53c9f5dfce2703a6294308b196c2f4881f8745f",
+      "name": "Physical",
+      "author": "Dua Lipa",
+      "beatmapper": "Fasty & ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 222.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "491468e0abd4b72609dec75eb437cf2370803183c097b72e243bb35a5f9f69f6",
+      "name": "Love Again",
+      "author": "Dua Lipa",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 228.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "cb90778db9698e53c74742aafd8ec3758d50627a55f7b0b3d84cdd857b6e9ecd",
+      "name": "Blow Your Mind (Mwah)",
+      "author": "Dua Lipa",
+      "beatmapper": "WitchyRe",
+      "difficulty": 4,
+      "trackDuration": 179.0,
+      "addedTime": 1680343226
+    },
+    {
+      "hash": "c7d3e489f341e8bf3b9f8d3a854062f17e637c2471b7d9742f14e69dfeec30dd",
+      "name": "Toss a Coin to your Witcher",
+      "author": "Jaskier",
+      "beatmapper": "Oneill",
+      "difficulty": 3,
+      "trackDuration": 260.0,
+      "addedTime": 1680344442
+    },
+    {
+      "hash": "ecc9d6091b2d4b862dae296a92116a9dec46c76eec24ada2048003d3a7fcbdfa",
+      "name": "The Wellerman",
+      "author": "Various",
+      "beatmapper": "Oneill",
+      "difficulty": 3,
+      "trackDuration": 134.0,
+      "addedTime": 1680344442
+    },
+    {
+      "hash": "ce3e971e642df1a02d494558d7c9026db24c6da46933a5f6429d4a420ae30dc0",
+      "name": "Wellerman",
+      "author": "Sea Shanty",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 153.0,
+      "addedTime": 1680344442
+    },
+    {
+      "hash": "f120074c80bb32d33295e8e1f7680c8fbc4bd7fbea3886b315d00c5b001d982a",
+      "name": "Galway Girl",
+      "author": "Ed Sheeran",
+      "beatmapper": "Oneill",
+      "difficulty": 3,
+      "trackDuration": 172.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "175a4159ea8a05c161ef6e654cdc307907657a384821f9fd06e6b0a2d31bd927",
+      "name": "Walking on the Moon",
+      "author": "Infected Mushroom",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 249.0,
+      "addedTime": 1680344442
+    },
+    {
+      "hash": "629e9fdde96d20629450f8ef1270cd7108866197af4f551c7a611412e3d7c84d",
+      "name": "I Know There´s Something Going On",
+      "author": "Franky Tunes Feat. Jason McKnight & Big Daddi",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 203.0,
+      "addedTime": 1680345133
+    },
+    {
+      "hash": "3a28c085a67f2a195ca259d8d2346ea55f6eeb56d053a1e3450d22535e6fa7fa",
+      "name": "Break Free",
+      "author": "Teminite",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 312.0,
+      "addedTime": 1680345133
+    },
+    {
+      "hash": "645d0ec74ff6e48b4d6b1d9bd28d127b7c18536bf5f24316b504284ad9e9c635",
+      "name": "Josephine",
+      "author": "Parov Stelar feat. Anduze",
+      "beatmapper": "KuritsaDBS",
+      "difficulty": 4,
+      "trackDuration": 189.0,
+      "addedTime": 1680345133
+    },
+    {
+      "hash": "80f936ef422d98f6ac4269bf7291f1ec66040d6a5a940aa74eb7b5410d741b28",
+      "name": "CATGROOVE",
+      "author": "Parov Stelar",
+      "beatmapper": "RAPTOR",
+      "difficulty": 4,
+      "trackDuration": 237.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "25251879194c2e08cf997fd68e1eeaf0747da6ff5be44f7fd41bb700f0534f64",
+      "name": "Voodoo Sonic",
+      "author": "Parov Stelar",
+      "beatmapper": "Foonerisms",
+      "difficulty": 2,
+      "trackDuration": 209.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "7c28f3723bd07f40d7a707b1c610c8777c7dc51ceae47453a7f062f93e33351f",
+      "name": "Think About Things",
+      "author": "Daði Freyr",
+      "beatmapper": "Bamse (St. Bernard)",
+      "difficulty": 1,
+      "trackDuration": 176.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "209bd3aeab95156bd5da2a55f6c4b82ba8f4f069ca1e8b8282f2f9d222537628",
+      "name": "Lovely",
+      "author": "He-Monster",
+      "beatmapper": "JustJML",
+      "difficulty": 1,
+      "trackDuration": 180.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "b43b0c966619d803507cdd7faf38dbdd10ed727951da6ac40ce1abd7c862eacf",
+      "name": "Forever Young",
+      "author": "Marc Crown Feat. Damian Pipes",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 210.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "58cab1ac9a00951af9d9a5636f1b3898c47c87a49d6a2abe568285a7eab41316",
+      "name": "Don't Worry Bout Me",
+      "author": "Zara Larsson",
+      "beatmapper": "NiceleyDone",
+      "difficulty": 3,
+      "trackDuration": 212.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "916f8723631ec83a152ec5bf040e4f0f66975800d23a2f1f7666c23012855c65",
+      "name": "Round & Round",
+      "author": "Jewelz & Sparks x Tiscore",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 178.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "02b66e64d26298ca72d4f97aee84f5c7677807681f48c2595b16bb0e7f831d03",
+      "name": "Thunder",
+      "author": "Gabry Ponze x LUM!X x Prezioso",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 164.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "3e81bd4a24313ce4ce8a8d347298621e01a412c42b2b59186650b4e51716a0ad",
+      "name": "It's You",
+      "author": "Alan Fullmer",
+      "beatmapper": "Artanis",
+      "difficulty": 5,
+      "trackDuration": 190.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "efc965147a5207348f5f77c9400c2fdd8c385121964ccf06de6ca87ac872b7af",
+      "name": "Dopamine",
+      "author": "Purple Disco Maschine Feat.Eyelar",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 222.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "406fb674b759cd2112350cd64a1e2b1d61a782d3857fcfb201749ee704e16c74",
+      "name": "Don´t be Shy",
+      "author": "Tiesto & Karol G",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 143.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "477c5ee56040c45982db3fb2c086a9ed20b5795c441b6e7ccb13c777081dc97c",
+      "name": "Skulls",
+      "author": "Röyskopp",
+      "beatmapper": "Excession",
+      "difficulty": 5,
+      "trackDuration": 202.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "f5d0733fdf2833e244cc057d0ea68b0fdb585bca6655c914272be7518ed10e92",
+      "name": "Monument (The Inevitable End Version)",
+      "author": "Röyksopp feat. Robyn",
+      "beatmapper": "Fasty",
+      "difficulty": 3,
+      "trackDuration": 303.0,
+      "addedTime": 1680344442
+    },
+    {
+      "hash": "b62de327cf6be87aeac36fb0a0f375d87dcc6e7bb35189d3dbd27e9f86942f2b",
+      "name": "A Million Stars",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 231.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "04b921e9eded425c51e62344301e0470c87b3ef777af6b1005c97845459e995f",
+      "name": "Colors (Sunset Beach Mix)",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 271.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "4f6730c7f3d0f3279fd6d19e25ad5c9aa0d68604209268866d4c6f6162c61206",
+      "name": "Speed Of Light",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 221.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "4d8f1ee4ad294008d33ad1adfd8d0fe9f3dc30820ad5efd1e311536d5b80903e",
+      "name": "Touch The Sky",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 240.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "700eded65b90158bbb83f7f8e58c60c9910614360375c73501c97a712ef46696",
+      "name": "Aperture",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 279.0,
+      "addedTime": 1680347018
+    },
+    {
+      "hash": "22ce4e0cf8d2dff5b1cb0b60cd3aaca4ead0d3ebdcb714e4d4a3353a96643a3f",
+      "name": "Sail Away",
+      "author": "Teminite",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 260.0,
+      "addedTime": 1680347018
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "2021",
+  "description": "Fav beatmaps from 2021",
+  "gradientTop": "#F91C84",
+  "gradientDown": "#7430CF",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#464956",
+  "creationDate": "1680341828"
+}

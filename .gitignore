@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Python cache/venv
+__pycache__/
+.pycache/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Build artifacts
+build/
+dist/
+*.zip
+
+# PyInstaller temp files
+*.spec.bak
+
+# IDE/editor
+.vscode/
+.idea/

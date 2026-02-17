@@ -1,0 +1,868 @@
+{
+  "dataString": [
+    {
+      "hash": "3bb90c5d31cefadb642683019bcd9cdeb61dcc2001ca498b3b70fbb4aec19451",
+      "name": "Hands",
+      "author": "Macy Gray",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 231.0,
+      "addedTime": 1705759637
+    },
+    {
+      "hash": "7258a1d030cf613b8dcc5d6ca6099af2e98f8eb5451dc1bd39f38cdb583f5de9",
+      "name": "Who's Next",
+      "author": "Divide Music",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 225.0,
+      "addedTime": 1705759655
+    },
+    {
+      "hash": "0f2d177345e4a73fded0d9580567bb8df2c7349a79ccf9629b165e1404de6f59",
+      "name": "Sweet Dreams (Are Made Of This)",
+      "author": "Rezz x fknsyd ",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 157.0,
+      "addedTime": 1705759664
+    },
+    {
+      "hash": "ce935a71c01b68e7797a1b51b393f84f89c71c360f269d3a22d349b6ea745057",
+      "name": "Nothing Left (Bensley Remix)",
+      "author": "Eliminate (feat. Xaelo)",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 262.0,
+      "addedTime": 1705759714
+    },
+    {
+      "hash": "4542699d9ac7bfc157c39cda78b7f9eedd849d925e5e720647cf6b510318f762",
+      "name": "Polka Your Eyes Out",
+      "author": "Weird Al Yankovic",
+      "beatmapper": "20 Mappers (BFDDMRCACFCSIJBGDPSC)",
+      "difficulty": 4,
+      "trackDuration": 230.0,
+      "addedTime": 1705759745
+    },
+    {
+      "hash": "d81522c27dafdfcfdc5b20574af9f0b9b6c3086bf0e49fba82c781ac1cda3ca8",
+      "name": "Brother Louie",
+      "author": "Modern Talking",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 225.0,
+      "addedTime": 1705759766
+    },
+    {
+      "hash": "62a2763bff92e97174808dcbd42f008af42153894675340fbdc227124d32f65d",
+      "name": "Let's Face It I'm Cute (Roaring Twenties Mix)",
+      "author": "11 Acorn Lane",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 175.0,
+      "addedTime": 1705759800
+    },
+    {
+      "hash": "f0508f735d77d36a08a564be5d05f96ccbbdedc58b19781e9b0cac2f1dfdb07a",
+      "name": "Bad Guy",
+      "author": "Billy Eilish",
+      "beatmapper": "Jennifurr",
+      "difficulty": 4,
+      "trackDuration": 197.0,
+      "addedTime": 1705759815
+    },
+    {
+      "hash": "1c06d82f09a574baa1c4e610537e5f112fab2df30a8516b1c4ed361441e45215",
+      "name": "summerbreeze",
+      "author": "van linden",
+      "beatmapper": "jeff",
+      "difficulty": 1,
+      "trackDuration": 188.0,
+      "addedTime": 1705828037
+    },
+    {
+      "hash": "6eaf95e714d1fead1ff06cd52117a4bf0b6dac8964303a7f642d2b37de6a3005",
+      "name": "Funny Song",
+      "author": "Crazy Frog",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 142.0,
+      "addedTime": 1705828058
+    },
+    {
+      "hash": "3278e5fc59938ecd1d9e09f27eb10583c4ae1d7e31271ecb41040651ba981721",
+      "name": "Higher Power",
+      "author": "Coldplay",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 204.0,
+      "addedTime": 1705828757
+    },
+    {
+      "hash": "1ee618a795b72b79f6f58ad0471756fb2488bb61f3e3e8b91731e9d9544ec335",
+      "name": "DDU-DU DDU-DU",
+      "author": "BLACKPINK",
+      "beatmapper": "Jennifurr",
+      "difficulty": 4,
+      "trackDuration": 212.0,
+      "addedTime": 1705828771
+    },
+    {
+      "hash": "5e7c2d456aa0a423cf78495b0699960818bc5a7a08843b5f75aed1038bbc5335",
+      "name": "Move Your Humps (syence 'tipsy' experiment) [Explicit]",
+      "author": "Syence",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 2,
+      "trackDuration": 189.0,
+      "addedTime": 1709373610
+    },
+    {
+      "hash": "9b4963f3c9a5f5ec5ec335bd1deab48c8bfd489b76ff161cb212e48c9f3bde54",
+      "name": "Shackles (Praise You) - Christian Song",
+      "author": "Mary Mary",
+      "beatmapper": "Deepblu038",
+      "difficulty": 2,
+      "trackDuration": 197.0,
+      "addedTime": 1709373638
+    },
+    {
+      "hash": "113ef44f02357a4311d4ea326cfccbf72765dbdf81e967838f3955b4f8a7d0a2",
+      "name": "Grand Escape - Teminite Remix",
+      "author": "Cadmium, Zack Merci, Teminite, Tara Louise",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 242.0,
+      "addedTime": 1709373648
+    },
+    {
+      "hash": "5b0b7d965a4a2dc81d4d99513213b7862967b5d07d045e1682a766713f657959",
+      "name": "Bullet with Butterfly Wings",
+      "author": "Smashing Pumpkins",
+      "beatmapper": "Marinus",
+      "difficulty": 4,
+      "trackDuration": 253.0,
+      "addedTime": 1709373782
+    },
+    {
+      "hash": "f3a190d019604491009f2900951c3661b82ee70a560fc36005014c5757ea480e",
+      "name": "Meghan Trainor vs. Daft Punk vs. Martin Tungevaag (Mashup)",
+      "author": "Remix",
+      "beatmapper": "Nancy.85",
+      "difficulty": 4,
+      "trackDuration": 224.0,
+      "addedTime": 1709373678
+    },
+    {
+      "hash": "fa9c1e32b6365786e2a5506d98068431a7d8e65f06f5c57b356ed333951e5c5d",
+      "name": "Unison",
+      "author": "Celine Dion",
+      "beatmapper": "70-80s Rocker",
+      "difficulty": 4,
+      "trackDuration": 244.0,
+      "addedTime": 1709373693
+    },
+    {
+      "hash": "1c328e869da43c47abab8cf8410a82c187cc9b005043e961c2594e24a3e7f4a6",
+      "name": "The Law",
+      "author": "Reach",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 204.0,
+      "addedTime": 1709373707
+    },
+    {
+      "hash": "7460d0edd2395186332535076f817df4efe07cec6a6ad4b8fd40c48a3b53f69a",
+      "name": "Dead Man Walking",
+      "author": "City Wolf",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 169.0,
+      "addedTime": 1709373718
+    },
+    {
+      "hash": "6be82e832a3a707909050719cf1a377db9f4a8b5e24c0d6c1f1b080cadf3a460",
+      "name": "Hate It Or Love It",
+      "author": "Mary J Blige (Feat. The Game & 50cent)",
+      "beatmapper": "eye4ai",
+      "difficulty": 3,
+      "trackDuration": 254.0,
+      "addedTime": 1709373733
+    },
+    {
+      "hash": "80c0eb9d59e6a6380c352d3f512fa41757d8d663ccdbb65b1b517b5af4327ba4",
+      "name": "Impact Event",
+      "author": "Lukhash",
+      "beatmapper": "XionsProphecy",
+      "difficulty": 5,
+      "trackDuration": 256.0,
+      "addedTime": 1709373744
+    },
+    {
+      "hash": "f14c94782b9ed84def9d875485f8d52e7d0d76253172e650e5782b3adac79c01",
+      "name": "Mister Jewel Box",
+      "author": "トップハムハット狂 (TOPHAMHAT-KYO)",
+      "beatmapper": "F1re3dg3",
+      "difficulty": 4,
+      "trackDuration": 197.0,
+      "addedTime": 1711478586
+    },
+    {
+      "hash": "cb47027d98c81df5fa62db2a7c83beeb332899479bd68cb975d58f3df3ee7f6a",
+      "name": "BACK2LIFE",
+      "author": "ALLEYCVT",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 198.0,
+      "addedTime": 1711478601
+    },
+    {
+      "hash": "848f1281df0105ba99df4e77e23ceb46ebe767c4cdfdeec960d2102d56596a8f",
+      "name": "Mosquito",
+      "author": "PinkPantheress",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 146.0,
+      "addedTime": 1711479580
+    },
+    {
+      "hash": "ce3e971e642df1a02d494558d7c9026db24c6da46933a5f6429d4a420ae30dc0",
+      "name": "Wellerman",
+      "author": "Sea Shanty",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 153.0,
+      "addedTime": 1711560779
+    },
+    {
+      "hash": "94d40dc5ed0f8e3367205f83bbdc86de06478d759964e7545b50e46a393279cf",
+      "name": "Fireball",
+      "author": "Pitbull ft. John Ryan",
+      "beatmapper": "Emillion ",
+      "difficulty": 4,
+      "trackDuration": 238.0,
+      "addedTime": 1712420140
+    },
+    {
+      "hash": "56ce35cfad34be3e1a1f420d8b5e63588e94b4da207d70b539aee08dc87b5f05",
+      "name": "Best-Of-2020-Megamashup",
+      "author": "Djs-From-Mars",
+      "beatmapper": "Nancy.85",
+      "difficulty": 4,
+      "trackDuration": 314.0,
+      "addedTime": 1712420546
+    },
+    {
+      "hash": "3278e5fc59938ecd1d9e09f27eb10583c4ae1d7e31271ecb41040651ba981721",
+      "name": "Higher Power",
+      "author": "Coldplay",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 204.0,
+      "addedTime": 1712508687
+    },
+    {
+      "hash": "9cf4286d9132b448038a07af1523d162ba1ac10acdb422f627a27ae3f828f9b6",
+      "name": "Belly Dancer",
+      "author": "Imanbek & BYOR",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 152.0,
+      "addedTime": 1712591738
+    },
+    {
+      "hash": "caa7b0f4a6f5bc9ca78d7e65c88004e1287f7176c5c0037feff1eed783dcf4b5",
+      "name": "Eye Of The Untold Her",
+      "author": "Lindsey Stirling",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 234.0,
+      "addedTime": 1712591746
+    },
+    {
+      "hash": "1358f8889c7631664d0ceae8f7964dba5744aa58b3071ae16da5ced19bff3e5a",
+      "name": "Night Queen",
+      "author": "Thomas Bergersen",
+      "beatmapper": "gohidas",
+      "difficulty": 3,
+      "trackDuration": 226.0,
+      "addedTime": 1712938995
+    },
+    {
+      "hash": "df6520d1533aa5ccd7f6d65dd615617116d78070495719674f55be2ade32ba63",
+      "name": "Say Hey (I Love You)",
+      "author": "Michael Franti & Spearhead",
+      "beatmapper": "DonJuannelly",
+      "difficulty": 4,
+      "trackDuration": 239.0,
+      "addedTime": 1713086308
+    },
+    {
+      "hash": "65ba1c8d388f58411e7841e2c37a258932ad142e178fe9ae9147ae29a18b3e55",
+      "name": "Fallin' (Adrenaline)",
+      "author": "Why Don't We",
+      "beatmapper": "Sodapie",
+      "difficulty": 4,
+      "trackDuration": 218.0,
+      "addedTime": 1713086322
+    },
+    {
+      "hash": "a91c204161b5699c1ec4c59fa0b9e47878e272d9f2de176c4d756b6c55cc01fd",
+      "name": "Houdini",
+      "author": "Dua Lipa",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 187.0,
+      "addedTime": 1713086349
+    },
+    {
+      "hash": "afbea5ee3c7d1070c74944c5aaacf905f694c8fd4dfdedb24fbc222f958bafae",
+      "name": "I Gotta Feeling (Chaos Ferret Edit)",
+      "author": "The Black Eyed Peas",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 4,
+      "trackDuration": 158.0,
+      "addedTime": 1713086359
+    },
+    {
+      "hash": "cde2e7fa0aa92e596867798a99b51a2236a7180bc7729d20c74bc56db202d449",
+      "name": "Highway Star",
+      "author": "Deep Purple",
+      "beatmapper": "70-80s Rocker",
+      "difficulty": 4,
+      "trackDuration": 371.0,
+      "addedTime": 1715412547
+    },
+    {
+      "hash": "21317ba7f9589dcac0df7917a3d43c1ff2c910396edc45cafe7db056f1d98ebb",
+      "name": "Home   (Vintage Culture Remix)",
+      "author": "CamelPhat",
+      "beatmapper": "eye4ai (Bezmondo)",
+      "difficulty": 3,
+      "trackDuration": 217.0,
+      "addedTime": 1716442232
+    },
+    {
+      "hash": "a231fcd7b965557e1630f93b0b1a17066e27dcf9386d8077027751dfbe789a6f",
+      "name": "Lonely",
+      "author": "Gabry Ponte & Jerome",
+      "beatmapper": "eye4ai (Bezmondo)",
+      "difficulty": 3,
+      "trackDuration": 173.0,
+      "addedTime": 1716442274
+    },
+    {
+      "hash": "5e3572aaf1ab218bc68938e2dbf18b1dd0b23f6ee1394d0bf6114822dc3f9229",
+      "name": "Take on Me",
+      "author": "a-ha",
+      "beatmapper": "80's Rebel",
+      "difficulty": 3,
+      "trackDuration": 211.0,
+      "addedTime": 1716442322
+    },
+    {
+      "hash": "5715fbea4623b43aab21c8fe533677548fd1261b8fce5888b3a7bad375526535",
+      "name": "Go!",
+      "author": "Public Service Broadcasting",
+      "beatmapper": "Mightily Oats",
+      "difficulty": 3,
+      "trackDuration": 253.0,
+      "addedTime": 1716442352
+    },
+    {
+      "hash": "2208bab8de5c21907d55639b42e89c9d9612a5d85b3a738097c36776b858bf01",
+      "name": "Runaway",
+      "author": "P!nk",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 3,
+      "trackDuration": 178.0,
+      "addedTime": 1716442441
+    },
+    {
+      "hash": "905afc981fe06ee2982890bec9f0c1c1df0c79797530f430d3e3c3199fc3b412",
+      "name": "Paint It Black",
+      "author": "Rolling Stones",
+      "beatmapper": "Marinus",
+      "difficulty": 4,
+      "trackDuration": 204.0,
+      "addedTime": 1718266454
+    },
+    {
+      "hash": "eb7213f0e981e44971b9151d2b60dae6260f03c1f2e46c969bbb5f9e4ac0ad92",
+      "name": "Somebody's Out There",
+      "author": "Triumph",
+      "beatmapper": "70-80s Rocker",
+      "difficulty": 3,
+      "trackDuration": 244.0,
+      "addedTime": 1718266464
+    },
+    {
+      "hash": "f1771fcc5161a0f1ec3a067c95ce94f2a5c0bd40d93425b7f7e45277a222e6cb",
+      "name": "R U Mine?",
+      "author": "Arctic Monkeys",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 202.0,
+      "addedTime": 1719836265
+    },
+    {
+      "hash": "29f309e74d825490e2aac32e406ef00e37d9ae77581a3d8391dd5298e24cb451",
+      "name": "Heartbreaker",
+      "author": "Purple Disco Machine x Chromeo",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 216.0,
+      "addedTime": 1719836275
+    },
+    {
+      "hash": "d6cf654dc3bea0b1da65b020f6cc2251d99329541aa4e748b24d8d4074304f10",
+      "name": "places to be",
+      "author": "Fred again.., Anderson.Paak, CHIKA",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 229.0,
+      "addedTime": 1721809765
+    },
+    {
+      "hash": "8fe8f094c170e7b46babfdd4aa8f083456b79fe51f944b78608954a645ebcf49",
+      "name": "L'Amour Toujours / Blue (Da Ba Dee)",
+      "author": "THE RUMPLED ft. FIRKIN",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 180.0,
+      "addedTime": 1721809569
+    },
+    {
+      "hash": "8b286777d2b0b8e7af3925409c6e4fb7cc2d78167f4d36b02ba3130c44ca45b8",
+      "name": "LEFT RIGHT",
+      "author": "XG",
+      "beatmapper": "KitKat42",
+      "difficulty": 4,
+      "trackDuration": 224.0,
+      "addedTime": 1721809600
+    },
+    {
+      "hash": "77617430c183535659442f64199e1f88cc0ccef0d19a5a3d67b9822fe838dfb0",
+      "name": "Eyes Closed",
+      "author": "Imagine Dragons",
+      "beatmapper": "MarcyMondo",
+      "difficulty": 2,
+      "trackDuration": 199.0,
+      "addedTime": 1721809615
+    },
+    {
+      "hash": "c11fa4d9d6c6ea47b45e4d911cefc0702286dfbf2533edbd1f384ac5df66ffb6",
+      "name": "Pedro",
+      "author": "Raffaella Carrà ",
+      "beatmapper": "Sladkiu",
+      "difficulty": 4,
+      "trackDuration": 202.0,
+      "addedTime": 1721809630
+    },
+    {
+      "hash": "55e33679dd3b18a16ccd9a2faed3e92abe4bba6a77accab4599114b5bff1fdef",
+      "name": "Call Me",
+      "author": "Sebastian Bohm(Blondie Epic Orchestra Cover)",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 180.0,
+      "addedTime": 1721809677
+    },
+    {
+      "hash": "f29677bb81eabf7353c6f4ecc72c27fe357f62ccadbd71b3ff8d621a88054c12",
+      "name": "Desert rain",
+      "author": "Edward Maya feat. Vika Jigulina",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 249.0,
+      "addedTime": 1722781435
+    },
+    {
+      "hash": "7ca67049a568ac07085c81e562ad030c33b27120f5f8edecf56b7ae3f7e7a380",
+      "name": "Cruising California (Bumpin` in my trunk)",
+      "author": "The Offspring",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 214.0,
+      "addedTime": 1722781487
+    },
+    {
+      "hash": "615b68eeb69c958ca669421e4bb5a821503d93409ad324a3afbfa014eb5af2de",
+      "name": "Rock It",
+      "author": "Tokyo Machine",
+      "beatmapper": "XionsProphecy",
+      "difficulty": 5,
+      "trackDuration": 194.0,
+      "addedTime": 1722781520
+    },
+    {
+      "hash": "f96ab9dde7c98c81bc72a0e1946adfe08bb34387b328b933f693daaa040d4010",
+      "name": "Fields of Grey feat. Sasha Grey",
+      "author": "Infected Mushroom",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 262.0,
+      "addedTime": 1722781546
+    },
+    {
+      "hash": "8b395c355b346944d4db573471e97f61479852ba3f96b54cde2273973fb253f9",
+      "name": "Lose Control",
+      "author": "Teddy Swims",
+      "beatmapper": "Bezmondo (eye4ai)",
+      "difficulty": 3,
+      "trackDuration": 213.0,
+      "addedTime": 1724263897
+    },
+    {
+      "hash": "03bb9bc0bc7fbdf259bab8ea1386ce382610fd32c68ca00c12d9b8efd547d45b",
+      "name": "Firebird",
+      "author": "MDK ft. Nick Sadler",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 253.0,
+      "addedTime": 1724263929
+    },
+    {
+      "hash": "d008bab0c80329b2c67840b0b7c398f7aa6e51679b89370026b70d5d8c3b8734",
+      "name": "BURN",
+      "author": "Written By Wolves",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 224.0,
+      "addedTime": 1724263937
+    },
+    {
+      "hash": "41c77701b32d6ebb06fbed3f3ad8df1c65da6cebc7ba91f03fef50f13e41e1c5",
+      "name": "My Stupid Heart",
+      "author": "Walk Off The Earth",
+      "beatmapper": "MickeyFL13",
+      "difficulty": 4,
+      "trackDuration": 162.0,
+      "addedTime": 1724263984
+    },
+    {
+      "hash": "5d4150d071166a2985936a3c8fe4b148525690d07d86dad4d582effbf76f4099",
+      "name": "Here We Stand",
+      "author": "Hidden Citizens",
+      "beatmapper": "LaidBackAries, Zloym93",
+      "difficulty": 4,
+      "trackDuration": 190.0,
+      "addedTime": 1724263996
+    },
+    {
+      "hash": "55fddc3795237370d6716d835ce328a2963d0207511d2c1709cc144726cb1504",
+      "name": "I Want Candy",
+      "author": "Aaron Carter",
+      "beatmapper": "RedPanda",
+      "difficulty": 4,
+      "trackDuration": 201.0,
+      "addedTime": 1724264010
+    },
+    {
+      "hash": "b054943eb84dca5fc88a3ccb34ef95a6427adf038f067d26934a3d6affbf9ebb",
+      "name": "Dirty",
+      "author": "grandson",
+      "beatmapper": "ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 207.0,
+      "addedTime": 1724264028
+    },
+    {
+      "hash": "bae63fccd7ee00b7a39d00452f18826b9ee413b6434c72781907b4985e9a24d4",
+      "name": "Daddy Cool",
+      "author": "Boney(M)",
+      "beatmapper": "Sladkiu",
+      "difficulty": 3,
+      "trackDuration": 210.0,
+      "addedTime": 1724264044
+    },
+    {
+      "hash": "8bac8f730f2406ca892b7b696efb4a93dd8f1976b38fa87417e5b0b221eb9aea",
+      "name": "The Sound of San Francisco",
+      "author": "Global Deejays",
+      "beatmapper": "Pico.iva",
+      "difficulty": 3,
+      "trackDuration": 216.0,
+      "addedTime": 1724264064
+    },
+    {
+      "hash": "64ead23737396f3838858d3f91018b8d14df3dcbc7a23496bf96c54ce229ec64",
+      "name": "Great Balls of Fire",
+      "author": "Jerry Lee Lewis",
+      "beatmapper": "TRINATRON",
+      "difficulty": 4,
+      "trackDuration": 115.0,
+      "addedTime": 1725276163
+    },
+    {
+      "hash": "f8da71d06eb2755439c6f2cf2525820609f33b82a8802e6ca7e39ccaf9cbe1d5",
+      "name": "Meghan Trainor vs. Daft Punk vs. Martin Tungevaag (Mashup)",
+      "author": "Remix_",
+      "beatmapper": "Nancy.85",
+      "difficulty": 4,
+      "trackDuration": 224.0,
+      "addedTime": 1725276252
+    },
+    {
+      "hash": "c883d04f37af5a60df21697f55acae2931015b5583c896d139f6762a80f2732f",
+      "name": "Just Breathe feat. Alina Renae",
+      "author": "Alan Fullmer",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 237.0,
+      "addedTime": 1725276286
+    },
+    {
+      "hash": "804978072acab2144781c28511419d35d349f8e6f79582aeb6c13a81baad3aea",
+      "name": "My Heart Has Your Name",
+      "author": "Alan Fullmer & LYD14",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 216.0,
+      "addedTime": 1725276441
+    },
+    {
+      "hash": "30daa607df25005485ab64e9083f2882f620f28e994102b9fbd65372b1b50fa4",
+      "name": "Larger than Life",
+      "author": "Backstreet Boys",
+      "beatmapper": "Artanis & ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 233.0,
+      "addedTime": 1727623790
+    },
+    {
+      "hash": "7e7a79f9b356f36779b589d34bd259b5c2f46e8e30f88125e7564f0c89f6324d",
+      "name": "Hoot",
+      "author": "Girl's Generation",
+      "beatmapper": "=Remi=",
+      "difficulty": 3,
+      "trackDuration": 198.0,
+      "addedTime": 1727623806
+    },
+    {
+      "hash": "8315a86f17bea1f809657453f41e3132995e0d6aa7936672c283634711f8bd87",
+      "name": "Songbirds",
+      "author": "Silversun Pickups",
+      "beatmapper": "Excession",
+      "difficulty": 4,
+      "trackDuration": 307.0,
+      "addedTime": 1727623815
+    },
+    {
+      "hash": "a651a498985a3da6fe2a9c488974f52b07a9addb6872413c98dd1e054341e49a",
+      "name": "The Kids Aren't Alright",
+      "author": "The Offspring",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 182.0,
+      "addedTime": 1727623867
+    },
+    {
+      "hash": "9f2fbf5dc960723616441938c7699bb2044da0a1a6522aed0de9bbb53064609d",
+      "name": "Save The Night",
+      "author": "Julian Perretta",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 2,
+      "trackDuration": 146.0,
+      "addedTime": 1728584141
+    },
+    {
+      "hash": "fee114545f27272521a61f48b246d51c83080b3acbd10e31331524304580f2fc",
+      "name": "Pink electric shoes",
+      "author": "PAROV STELAR",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 200.0,
+      "addedTime": 1729184976
+    },
+    {
+      "hash": "ccbfef56adca9c4f8f35046816529c7b05f82fefed5127f85c51ef1aac824080",
+      "name": "Waste Of Time",
+      "author": "Paul Gilbert & Freddie Nelson",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 203.0,
+      "addedTime": 1729185010
+    },
+    {
+      "hash": "f044fb98af7a7af1eb0289428fee9a614546003fafc752638df080a7e0187356",
+      "name": "Willow Tree",
+      "author": "MOGUAI & Enisa & JEAN-NOËL",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 2,
+      "trackDuration": 171.0,
+      "addedTime": 1729524815
+    },
+    {
+      "hash": "6a2c953a80566a21f2924be2f8af5ae9ebf6419af5ba20be6bac1114e1de3d12",
+      "name": "Fred Flinstone",
+      "author": "Narvent, Riff Raff & YNG BNZO",
+      "beatmapper": "MarcyMallow",
+      "difficulty": 2,
+      "trackDuration": 211.0,
+      "addedTime": 1730467465
+    },
+    {
+      "hash": "5d9f2127c8eea542d16f1bbd81bb42cf339505ea1d779a47ffb241b557dccfc1",
+      "name": "Hey Ya!",
+      "author": "Outkast",
+      "beatmapper": "CakeEaterPro",
+      "difficulty": 2,
+      "trackDuration": 238.0,
+      "addedTime": 1730467473
+    },
+    {
+      "hash": "e84d1c466475b263c087fb46555417f655c15fa06ab7be37beec689568cbb2dc",
+      "name": "Divine Moves",
+      "author": "Josef Bel Habib",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 4,
+      "trackDuration": 124.0,
+      "addedTime": 1730467482
+    },
+    {
+      "hash": "f92b8abb3df13668a5ffb857bc8c30fb946c0d1bc5cda1c20ca079cfef9dae0a",
+      "name": "Find Me",
+      "author": "Sigma, Birdy",
+      "beatmapper": "Star360",
+      "difficulty": 4,
+      "trackDuration": 204.0,
+      "addedTime": 1730467498
+    },
+    {
+      "hash": "d9766853a0946544d2e39cef7cb3eb1c1b9e2a64824219f8508a5ce13f51a736",
+      "name": "King of the Swingers (Balduin Remix)",
+      "author": "Balduin & The Swing Ninjas",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 160.0,
+      "addedTime": 1730913225
+    },
+    {
+      "hash": "f7bbdde23b51c153dd644b108277f602e89c526de663d872c0233beca50396d1",
+      "name": "This Is The Life (Where U Gonna Sleep Tonight)",
+      "author": "Amy McDonald",
+      "beatmapper": "Pico.iva",
+      "difficulty": 1,
+      "trackDuration": 189.0,
+      "addedTime": 1730913114
+    },
+    {
+      "hash": "ae8cb02c67aad8e295fc81008c0abd909e7029c23bdcf3322e4a7aa07b40915b",
+      "name": "Round & Round",
+      "author": "New Order",
+      "beatmapper": "Mightily Oats",
+      "difficulty": 4,
+      "trackDuration": 280.0,
+      "addedTime": 1730913140
+    },
+    {
+      "hash": "6099c12bc64858d2ff118cba691927f4d1ccf010051eb3891967aa808c896033",
+      "name": "Trustfall (Re-Mapped)",
+      "author": "P!NK",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 238.0,
+      "addedTime": 1731858794
+    },
+    {
+      "hash": "ef8c29bd4afc7440b375618dbee641835518291e141c24057921f60afefdca55",
+      "name": "Bad Company",
+      "author": "Purple Disco Machine",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 201.0,
+      "addedTime": 1731858802
+    },
+    {
+      "hash": "977fd9acf6df5dbb4b31818fda5fee0025f2f35a9d3fcbb9386cbe236fd29a38",
+      "name": "Running On Empty ",
+      "author": "DJ Trashy",
+      "beatmapper": "Deepblu038",
+      "difficulty": 3,
+      "trackDuration": 177.0,
+      "addedTime": 1731858809
+    },
+    {
+      "hash": "61e01802e8c724cdb1235a1eb665421556446a0371b421ff22bf48cbb0842739",
+      "name": "One On One",
+      "author": "The Knocks feat. Sofi Tukker",
+      "beatmapper": "ATTACK DRAGON * Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 215.0,
+      "addedTime": 1731858816
+    },
+    {
+      "hash": "f828ac0506f527f6835321072f56ec2de41abe3cf8f2c1920e7ce3906f80ae73",
+      "name": "APT.",
+      "author": "ROSÉ & Bruno Mars",
+      "beatmapper": "SaintSnowmad",
+      "difficulty": 4,
+      "trackDuration": 169.0,
+      "addedTime": 1731858880
+    },
+    {
+      "hash": "990dc6ec5755095310a84cdd521a025b56e7b71d8e219abc16a5fa2a0be3a063",
+      "name": "Slash",
+      "author": "Teminite, Waterflame, Boom Kitty",
+      "beatmapper": "FINAL BOSS, ExtremeCalibre",
+      "difficulty": 4,
+      "trackDuration": 254.0,
+      "addedTime": 1732977402
+    },
+    {
+      "hash": "1a5764ab0bf55f44cdcf1b3228a10d2af2d06bba2db115ccc11510582f6e09a9",
+      "name": "Straight Up",
+      "author": "Vallhee, KiLLTEQ, D.Hash",
+      "beatmapper": "Pico.iva",
+      "difficulty": 4,
+      "trackDuration": 121.0,
+      "addedTime": 1732977427
+    },
+    {
+      "hash": "dd3a5019dbc752bdeb4a542c387503c2e01b927e03ac13914780decf5191b9b8",
+      "name": "Before You Go (Lewis Capaldi cover)",
+      "author": "The Piano Guys",
+      "beatmapper": "LaidBackAries",
+      "difficulty": 3,
+      "trackDuration": 233.0,
+      "addedTime": 1732977437
+    },
+    {
+      "hash": "4303dd39fbc50cef399ed200bbc901488547edd4ec585edfc62cda579285faf0",
+      "name": "Thnks fr th Mmrs",
+      "author": "Fall Out Boy",
+      "beatmapper": "Marinus and Sodapie",
+      "difficulty": 2,
+      "trackDuration": 206.0,
+      "addedTime": 1732977468
+    },
+    {
+      "hash": "1d7b6f40ebacaddaf0f6d74d435a6efd078d068dd247a0bbd75b70f7047a1bbe",
+      "name": "Surrender My Heart",
+      "author": "Carly Rae Jepsen",
+      "beatmapper": "Rabbles",
+      "difficulty": 2,
+      "trackDuration": 174.0,
+      "addedTime": 1732977490
+    },
+    {
+      "hash": "5af5884605e08ee6b6ee77091e3c1c1b6bf4b4c306650278e4336876794e9035",
+      "name": "Posin",
+      "author": "Glenn Gatsby",
+      "beatmapper": "Sladkiu",
+      "difficulty": 2,
+      "trackDuration": 186.0,
+      "addedTime": 1734373481
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "2024",
+  "description": "best of 2024",
+  "gradientTop": "#86748C",
+  "gradientDown": "#B31BA3",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#1695DA",
+  "creationDate": "1705759603"
+}

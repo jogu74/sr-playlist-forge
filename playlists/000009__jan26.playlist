@@ -1,0 +1,40 @@
+{
+  "dataString": [
+    {
+      "hash": "f485d05fff2124e6e83d71e3530c3cc066c2bed4d5f6527b1b8f6a2e68f9db9f",
+      "name": "Azizam",
+      "author": "Ed Sheeran",
+      "beatmapper": "ICHDerHorst",
+      "difficulty": 4,
+      "trackDuration": 165.0,
+      "addedTime": 1767257592
+    },
+    {
+      "hash": "0da6e1ae02cffefe25ac741d66a278265e2b439ac939689dba83d27fa357007f",
+      "name": "Don't Worry",
+      "author": "Madcon Ft Ray Dalton",
+      "beatmapper": "RAPTOR",
+      "difficulty": 4,
+      "trackDuration": 217.0,
+      "addedTime": 1767257714
+    },
+    {
+      "hash": "d6e09f7c60530bee86bdcf29d290d758a429c5e2248d3f5b6ae5edb5b66299b7",
+      "name": "Tokyo",
+      "author": "White Lies",
+      "beatmapper": "Noobient",
+      "difficulty": 2,
+      "trackDuration": 292.0,
+      "addedTime": 1767257733
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "jan26",
+  "description": "New Playlist",
+  "gradientTop": "#AC8E82",
+  "gradientDown": "#A23F40",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#020201",
+  "creationDate": "1767257536"
+}

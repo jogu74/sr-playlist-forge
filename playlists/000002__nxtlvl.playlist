@@ -1,0 +1,67 @@
+{
+  "dataString": [
+    {
+      "hash": "ce1223a7f875323d5165c22672723f8fd0e34ccf840e7d59fdebbdc161d39921",
+      "name": "Wonderland",
+      "author": "Caravan Palace",
+      "beatmapper": "",
+      "difficulty": 4,
+      "trackDuration": 192.0,
+      "addedTime": 1711729971
+    },
+    {
+      "hash": "26c06b50006b676ca9b2795bb38c870b6a39c10e15021e869a52feb597ea41ac",
+      "name": "Shatter Me",
+      "author": "Lindsey Stirling (feat. Lzzy Hale)",
+      "beatmapper": "",
+      "difficulty": 4,
+      "trackDuration": 284.0,
+      "addedTime": 1711729990
+    },
+    {
+      "hash": "5667dedcbcadcecf86b804d6e120c78a6390c1e60abbb46bc6286b92afd4e594",
+      "name": "Underground",
+      "author": "Lindsey Stirling",
+      "beatmapper": "",
+      "difficulty": 4,
+      "trackDuration": 265.0,
+      "addedTime": 1711730037
+    },
+    {
+      "hash": "3c54ed6ae90c00497a85d557babd12c39d28521e8f258cfc3973f43f06d099bb",
+      "name": "Imperfection",
+      "author": "Wolfgang Lohr & Balduin",
+      "beatmapper": "",
+      "difficulty": 4,
+      "trackDuration": 193.0,
+      "addedTime": 1711730057
+    },
+    {
+      "hash": "5ac176a36a5025ae0a5fbd09888f619c5d67822fe3069b67c99f2bfbdbc2c698",
+      "name": "Calling Out",
+      "author": "MUZZ (Feat. KG & Skyelle)",
+      "beatmapper": "",
+      "difficulty": 4,
+      "trackDuration": 338.0,
+      "addedTime": 1711730080
+    },
+    {
+      "hash": "9332ebcfe3c7c335aafe7195a286bb07edb66e7dea40868f13f1ccbfb1c90565",
+      "name": "Delight",
+      "author": "Jamie Berry Feat. Octavia Rose",
+      "beatmapper": "",
+      "difficulty": 4,
+      "trackDuration": 232.0,
+      "addedTime": 1711730096
+    }
+  ],
+  "SelectedIconIndex": 0,
+  "SelectedTexture": 0,
+  "namePlaylist": "nxt lvl",
+  "description": "new playlist",
+  "gradientTop": "#F45D3D",
+  "gradientDown": "#000203",
+  "colorTitle": "#FFFFFF",
+  "colorTexture": "#48DCBF",
+  "creationDate": "1691911453"
+}
