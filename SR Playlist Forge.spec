@@ -1,11 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+project_dir = Path.cwd()
+datas = []
+tools_dir = project_dir / "tools"
+if tools_dir.exists():
+    datas.append((str(tools_dir), "tools"))
 
 a = Analysis(
     ['synth_playlist_editor.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=datas,
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,11 +42,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets/icon.icns'],
-)
-app = BUNDLE(
-    exe,
-    name='SR Playlist Forge.app',
-    icon='assets/icon.icns',
-    bundle_identifier=None,
+    icon=['assets\\icon.ico'],
 )

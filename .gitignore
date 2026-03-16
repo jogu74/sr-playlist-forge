@@ -17,6 +17,11 @@ dist/
 # PyInstaller temp files
 *.spec.bak
 
+# Optional bundled ADB binaries kept local unless explicitly released
+tools/*.exe
+tools/*.dll
+!tools/README.md
+
 # IDE/editor
 .vscode/
 .idea/

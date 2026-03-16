@@ -10,6 +10,9 @@ py scripts\generate_icons.py --windows --input icon.png
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 
+set ADDDATA=
+if exist tools set ADDDATA=--add-data "tools;tools"
+
 py -m PyInstaller ^
   --noconfirm ^
   --onefile ^
@@ -17,6 +20,7 @@ py -m PyInstaller ^
   --clean ^
   --icon assets\icon.ico ^
   --name "SR Playlist Forge" ^
+  %ADDDATA% ^
   synth_playlist_editor.py
 
 echo Built Windows app at: %CD%\dist\SR Playlist Forge.exe
