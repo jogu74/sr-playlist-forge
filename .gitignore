@@ -13,6 +13,11 @@ venv/
 build/
 dist/
 *.zip
+release/build/
+release/windows/
+release/installer/
+release/*.spec
+!release/*.iss
 
 # PyInstaller temp files
 *.spec.bak
