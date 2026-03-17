@@ -47,6 +47,8 @@ except Exception:  # noqa: BLE001
     ImageTk = None
     HAS_PILLOW = False
 
+ENABLE_HOVER_TOOLTIPS = not getattr(sys, "frozen", False)
+
 
 ID_RE = re.compile(r"/beatmaps/(\d+)")
 HASH_TEXT_RE = re.compile(r"\b([a-fA-F0-9]{64})\b")
@@ -437,6 +439,53 @@ def error_log_path() -> Path:
     return app_support_dir() / "error.log"
 
 
+def bundled_tools_source_dirs() -> list[Path]:
+    return [
+        app_base_dir() / "tools",
+        app_base_dir() / "tools" / "platform-tools",
+    ]
+
+
+def stable_bundled_adb_dir() -> Path | None:
+    adb_names = ["adb.exe", "adb"]
+    dll_names = ["AdbWinApi.dll", "AdbWinUsbApi.dll"]
+    if getattr(sys, "frozen", False):
+        target_dir = app_support_dir() / "tools"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        copied_any = False
+        for name in [*adb_names, *dll_names]:
+            for source_dir in bundled_tools_source_dirs():
+                source_path = source_dir / name
+                if not source_path.exists():
+                    continue
+                target_path = target_dir / name
+                if not target_path.exists() or source_path.stat().st_mtime > target_path.stat().st_mtime:
+                    shutil.copy2(source_path, target_path)
+                copied_any = True
+                break
+        if copied_any and any((target_dir / name).exists() for name in adb_names):
+            return target_dir
+
+    for source_dir in bundled_tools_source_dirs():
+        if any((source_dir / name).exists() for name in adb_names):
+            return source_dir
+    return None
+
+
+def subprocess_hidden_window_kwargs() -> dict[str, Any]:
+    if os.name != "nt":
+        return {}
+    kwargs: dict[str, Any] = {}
+    create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    if create_no_window:
+        kwargs["creationflags"] = create_no_window
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = 0
+    kwargs["startupinfo"] = startupinfo
+    return kwargs
+
+
 def write_exception_log(title: str, exc_info: tuple[type[BaseException], BaseException, Any] | None = None) -> Path:
     if exc_info is None:
         exc_info = sys.exc_info()
@@ -492,6 +541,10 @@ def install_global_exception_hooks() -> None:
 
 def adb_candidate_paths() -> list[Path]:
     candidates: list[Path] = []
+    stable_dir = stable_bundled_adb_dir()
+    if stable_dir is not None:
+        candidates.extend([stable_dir / "adb.exe", stable_dir / "adb"])
+
     bundled_candidates = [
         app_base_dir() / "tools" / "adb.exe",
         app_base_dir() / "tools" / "platform-tools" / "adb.exe",
@@ -539,15 +592,7 @@ def adb_candidate_paths() -> list[Path]:
 
 def adb_looks_usable(adb_path: Path) -> bool:
     try:
-        result = subprocess.run(
-            [str(adb_path), "version"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=15,
-            check=False,
-        )
+        result = run_adb_command(str(adb_path), ["version"], timeout=15)
         output = f"{result.stdout}\n{result.stderr}".lower()
         return result.returncode == 0 and "android debug bridge" in output
     except Exception:
@@ -681,6 +726,9 @@ def extract_song_identity_from_synth_bytes(data: bytes, file_name: str) -> Heads
 
 
 def run_adb_command(adb_path: str, args: list[str], timeout: int = 120) -> subprocess.CompletedProcess[str]:
+    adb_dir = str(Path(adb_path).resolve().parent)
+    env = os.environ.copy()
+    env["PATH"] = adb_dir + os.pathsep + env.get("PATH", "")
     return subprocess.run(
         [adb_path, *args],
         capture_output=True,
@@ -689,6 +737,9 @@ def run_adb_command(adb_path: str, args: list[str], timeout: int = 120) -> subpr
         errors="replace",
         timeout=timeout,
         check=False,
+        cwd=adb_dir,
+        env=env,
+        **subprocess_hidden_window_kwargs(),
     )
 
 
@@ -767,11 +818,17 @@ def adb_read_text_file(adb_path: str, remote_path: str) -> str:
 
 
 def adb_read_file_bytes(adb_path: str, remote_path: str) -> bytes:
+    adb_dir = str(Path(adb_path).resolve().parent)
+    env = os.environ.copy()
+    env["PATH"] = adb_dir + os.pathsep + env.get("PATH", "")
     result = subprocess.run(
         [adb_path, "exec-out", "cat", remote_path],
         capture_output=True,
         timeout=120,
         check=False,
+        cwd=adb_dir,
+        env=env,
+        **subprocess_hidden_window_kwargs(),
     )
     if result.returncode != 0:
         stderr_text = result.stderr.decode("utf-8", errors="replace").strip()
@@ -1806,10 +1863,24 @@ class HoverTooltip:
         self.widget = widget
         self.text = text
         self.tipwindow: tk.Toplevel | None = None
-        self.widget.bind("<Enter>", self.show)
+        self.after_id: str | None = None
+        self.enabled = ENABLE_HOVER_TOOLTIPS
+        self.widget.bind("<Enter>", self.schedule_show)
         self.widget.bind("<Leave>", self.hide)
+        self.widget.bind("<ButtonPress>", self.hide)
+
+    def schedule_show(self, _event=None):
+        if not self.enabled or self.tipwindow is not None or self.after_id is not None:
+            return
+        try:
+            self.after_id = self.widget.after(450, self.show)
+        except tk.TclError:
+            self.after_id = None
 
     def show(self, _event=None):
+        self.after_id = None
+        if not self.enabled:
+            return
         if self.tipwindow is not None:
             return
         tip_text = self.text.strip() if self.text else ""
@@ -1836,6 +1907,12 @@ class HoverTooltip:
         self.tipwindow = tw
 
     def hide(self, _event=None):
+        if self.after_id is not None:
+            try:
+                self.widget.after_cancel(self.after_id)
+            except tk.TclError:
+                pass
+            self.after_id = None
         if self.tipwindow is not None:
             self.tipwindow.destroy()
             self.tipwindow = None
@@ -4207,7 +4284,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.update_idletasks()
 
     def schedule_quest_status_check(self, initial: bool = False) -> None:
-        delay = 300 if initial else 5000
+        delay = 500 if initial else 15000
         if self.quest_status_after_id:
             try:
                 self.after_cancel(self.quest_status_after_id)
