@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import time
+import traceback
 import tkinter as tk
 import zipfile
 from dataclasses import dataclass, asdict
@@ -420,6 +421,73 @@ def app_base_dir() -> Path:
             return Path(meipass)
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
+
+
+def app_support_dir() -> Path:
+    if os.name == "nt":
+        root = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+        support_dir = root / "SR Playlist Forge"
+    else:
+        support_dir = Path.home() / ".sr_playlist_forge"
+    support_dir.mkdir(parents=True, exist_ok=True)
+    return support_dir
+
+
+def error_log_path() -> Path:
+    return app_support_dir() / "error.log"
+
+
+def write_exception_log(title: str, exc_info: tuple[type[BaseException], BaseException, Any] | None = None) -> Path:
+    if exc_info is None:
+        exc_info = sys.exc_info()
+    exc_type, exc_value, exc_tb = exc_info
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = [f"[{timestamp}] {title}"]
+    if exc_type and exc_value:
+        lines.append("".join(traceback.format_exception(exc_type, exc_value, exc_tb)).rstrip())
+    else:
+        lines.append("No traceback available.")
+    lines.append("")
+    log_path = error_log_path()
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write("\n".join(lines))
+    return log_path
+
+
+def show_fatal_error_dialog(title: str, message: str) -> None:
+    try:
+        messagebox.showerror(title, message)
+    except Exception:
+        pass
+
+
+def install_global_exception_hooks() -> None:
+    def _handle_exception(exc_type: type[BaseException], exc_value: BaseException, exc_tb: Any) -> None:
+        if issubclass(exc_type, KeyboardInterrupt):
+            return
+        log_path = write_exception_log("Unhandled exception", (exc_type, exc_value, exc_tb))
+        show_fatal_error_dialog(
+            "SR Playlist Forge Error",
+            "An unexpected error occurred.\n\n"
+            f"Details were written to:\n{log_path}",
+        )
+
+    sys.excepthook = _handle_exception
+
+    def _threading_hook(args: threading.ExceptHookArgs) -> None:
+        if issubclass(args.exc_type, KeyboardInterrupt):
+            return
+        log_path = write_exception_log(
+            f"Unhandled thread exception in {args.thread.name if args.thread else 'unknown thread'}",
+            (args.exc_type, args.exc_value, args.exc_traceback),
+        )
+        show_fatal_error_dialog(
+            "SR Playlist Forge Error",
+            "A background task crashed.\n\n"
+            f"Details were written to:\n{log_path}",
+        )
+
+    threading.excepthook = _threading_hook
 
 
 def adb_candidate_paths() -> list[Path]:
@@ -3398,6 +3466,27 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.restore_session()
         self.schedule_quest_status_check(initial=True)
 
+    def report_callback_exception(
+        self,
+        exc: type[BaseException],
+        val: BaseException,
+        tb: Any,
+    ) -> None:
+        log_path = write_exception_log("Tkinter callback exception", (exc, val, tb))
+        try:
+            messagebox.showerror(
+                "SR Playlist Forge Error",
+                "An unexpected interface error occurred.\n\n"
+                f"Details were written to:\n{log_path}",
+                parent=self,
+            )
+        except Exception:
+            show_fatal_error_dialog(
+                "SR Playlist Forge Error",
+                "An unexpected interface error occurred.\n\n"
+                f"Details were written to:\n{log_path}",
+            )
+
     def _build_ui(self) -> None:
         root = ttk.Frame(self, padding=8)
         root.pack(fill="both", expand=True)
@@ -5087,6 +5176,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
 
 def main() -> None:
+    install_global_exception_hooks()
     app = PlaylistEditorApp()
     app.mainloop()
 
