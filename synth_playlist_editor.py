@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import io
+import msvcrt
 import os
 import queue
 import re
@@ -439,6 +440,42 @@ def error_log_path() -> Path:
     return app_support_dir() / "error.log"
 
 
+class SingleInstanceGuard:
+    def __init__(self) -> None:
+        self.lock_path = app_support_dir() / "app.lock"
+        self.handle: io.TextIOWrapper | None = None
+
+    def acquire(self) -> bool:
+        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        handle = self.lock_path.open("a+", encoding="utf-8")
+        try:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            handle.close()
+            return False
+        handle.seek(0)
+        handle.truncate()
+        handle.write(str(os.getpid()))
+        handle.flush()
+        self.handle = handle
+        return True
+
+    def release(self) -> None:
+        if self.handle is None:
+            return
+        try:
+            self.handle.seek(0)
+            msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+        except OSError:
+            pass
+        try:
+            self.handle.close()
+        except OSError:
+            pass
+        self.handle = None
+
+
 def bundled_tools_source_dirs() -> list[Path]:
     return [
         app_base_dir() / "tools",
@@ -459,9 +496,24 @@ def stable_bundled_adb_dir() -> Path | None:
                 if not source_path.exists():
                     continue
                 target_path = target_dir / name
-                if not target_path.exists() or source_path.stat().st_mtime > target_path.stat().st_mtime:
-                    shutil.copy2(source_path, target_path)
-                copied_any = True
+                needs_copy = not target_path.exists()
+                if not needs_copy:
+                    try:
+                        needs_copy = source_path.stat().st_mtime > target_path.stat().st_mtime
+                    except OSError:
+                        needs_copy = False
+                if needs_copy:
+                    try:
+                        shutil.copy2(source_path, target_path)
+                    except PermissionError:
+                        # Another running instance may still be holding adb.exe open.
+                        # Reuse the existing stable copy instead of failing Quest status polling.
+                        if not target_path.exists():
+                            continue
+                    except OSError:
+                        if not target_path.exists():
+                            continue
+                copied_any = copied_any or target_path.exists()
                 break
         if copied_any and any((target_dir / name).exists() for name in adb_names):
             return target_dir
@@ -600,7 +652,11 @@ def adb_looks_usable(adb_path: Path) -> bool:
 
 
 def find_adb_executable() -> str | None:
-    for candidate in adb_candidate_paths():
+    try:
+        candidates = adb_candidate_paths()
+    except Exception:
+        return None
+    for candidate in candidates:
         if adb_looks_usable(candidate):
             return str(candidate)
     return None
@@ -2909,16 +2965,19 @@ class MissingPlaylistSongsDialog(tk.Toplevel):
 
 
 class BeatmapBrowserDialog(tk.Toplevel):
-    def __init__(self, parent: tk.Misc):
+    def __init__(self, parent: tk.Misc, on_add_songs: Callable[[list[SongEntry]], tuple[int, int]] | None = None):
         super().__init__(parent)
-        self.title("Browse Synthriderz Beatmaps")
+        self.title("List Browser")
         self.geometry("1100x620")
         self.minsize(920, 520)
         self.result: list[SongEntry] = []
+        self.on_add_songs = on_add_songs
 
         self.filter_var = tk.StringVar(value="")
         self.status_var = tk.StringVar(value="Loading beatmaps...")
         self.page_info_var = tk.StringVar(value="Loading full beatmap list...")
+        self.selection_var = tk.StringVar(value="Selected: 0")
+        self.status_message = "Loading beatmaps..."
 
         self.total_count = 0
         self.loading = False
@@ -2948,6 +3007,8 @@ class BeatmapBrowserDialog(tk.Toplevel):
 
         ttk.Button(controls, text="Refresh New", command=self.sync_latest_rows).pack(side="left", padx=(10, 0))
         ttk.Button(controls, text="Full Refresh", command=self.load_all_rows).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Select All", command=self.select_all_visible).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Clear Selection", command=self.clear_selection).pack(side="left", padx=(6, 0))
 
         ttk.Button(controls, text="Open Website", command=self.open_selected_website).pack(side="right", padx=(8, 0))
         ttk.Button(controls, text="Add Selected", command=self.on_add_selected).pack(side="right")
@@ -2956,6 +3017,7 @@ class BeatmapBrowserDialog(tk.Toplevel):
         info.pack(fill="x", pady=(0, 8))
         ttk.Label(info, textvariable=self.page_info_var).pack(side="left")
         ttk.Label(info, textvariable=self.status_var).pack(side="left", padx=(14, 0))
+        ttk.Label(info, textvariable=self.selection_var).pack(side="right")
 
         table_frame = ttk.Frame(root)
         table_frame.pack(fill="both", expand=True)
@@ -2991,6 +3053,10 @@ class BeatmapBrowserDialog(tk.Toplevel):
         self.tree.pack(side="left", fill="both", expand=True)
         self.tree.bind("<Double-1>", lambda _event: self.on_add_selected())
         self.tree.bind("<Button-3>", self.on_tree_right_click)
+        self.tree.bind("<<TreeviewSelect>>", lambda _event: self.update_selection_status())
+        self.tree.bind("<Control-a>", lambda _event: self.select_all_visible())
+        self.tree.bind("<Control-A>", lambda _event: self.select_all_visible())
+        self.tree.bind("<Escape>", lambda _event: self.clear_selection())
 
         self.context_menu = tk.Menu(self, tearoff=0)
         self.context_menu.add_command(label="Add to Playlist", command=self.on_add_selected)
@@ -3002,19 +3068,28 @@ class BeatmapBrowserDialog(tk.Toplevel):
 
     def set_loading_state(self, is_loading: bool, message: str) -> None:
         self.loading = is_loading
-        self.status_var.set(message)
+        self.set_status_message(message)
+
+    def set_status_message(self, message: str) -> None:
+        self.status_message = message
+        self.update_selection_status()
+
+    def update_selection_status(self) -> None:
+        selected_count = len(self.tree.selection()) if hasattr(self, "tree") else 0
+        self.status_var.set(self.status_message)
+        self.selection_var.set(f"Selected: {selected_count}")
 
     def load_cached_rows(self) -> None:
         rows = load_cached_beatmaps()
         self.cache_loaded = bool(rows)
         if not rows:
             self.page_info_var.set("No local cache yet.")
-            self.status_var.set("No cached beatmaps found. Loading from Synthriderz...")
+            self.set_status_message("No cached beatmaps found. Loading from Synthriderz...")
             return
         self._rows = rows
         self.total_count = len(rows)
         self.page_info_var.set(f"Cached beatmaps: {self.total_count}")
-        self.status_var.set(f"Loaded {self.total_count} cached beatmaps.")
+        self.set_status_message(f"Loaded {self.total_count} cached beatmaps.")
         self.refresh_table()
 
     def load_all_rows(self) -> None:
@@ -3062,7 +3137,7 @@ class BeatmapBrowserDialog(tk.Toplevel):
 
     def _apply_progress_update(self, page: int, page_count: int, loaded_count: int) -> None:
         self.page_info_var.set(f"Loaded page {page} / {page_count}")
-        self.status_var.set(f"Loaded {loaded_count} beatmaps so far...")
+        self.set_status_message(f"Loaded {loaded_count} beatmaps so far...")
 
     def _queue_finish_load(
         self,
@@ -3087,8 +3162,8 @@ class BeatmapBrowserDialog(tk.Toplevel):
     ) -> None:
         self.set_loading_state(False, "Ready")
         if err is not None:
-            self.status_var.set(f"Load failed: {err}")
-            messagebox.showerror("Beatmap Browser", str(err), parent=self)
+            self.set_status_message(f"Load failed: {err}")
+            messagebox.showerror("List Browser", str(err), parent=self)
             return
 
         self._rows = rows
@@ -3097,11 +3172,11 @@ class BeatmapBrowserDialog(tk.Toplevel):
         self.page_info_var.set(f"Total beatmaps loaded: {len(rows)}")
         if mode == "sync":
             if added_count > 0:
-                self.status_var.set(f"Added {added_count} new beatmaps from Synthriderz.")
+                self.set_status_message(f"Added {added_count} new beatmaps from Synthriderz.")
             else:
-                self.status_var.set("No newer beatmaps found.")
+                self.set_status_message("No newer beatmaps found.")
         else:
-            self.status_var.set(f"Loaded {len(rows)} beatmaps from Synthriderz.")
+            self.set_status_message(f"Loaded {len(rows)} beatmaps from Synthriderz.")
         self.refresh_table()
 
     def refresh_table(self) -> None:
@@ -3134,12 +3209,13 @@ class BeatmapBrowserDialog(tk.Toplevel):
             )
 
         shown = len(self._visible_rows)
-        if needle:
-            self.status_var.set(f"Showing {shown} of {len(self._rows)} beatmaps.")
+        self.set_status_message(f"Showing {shown} of {len(self._rows)} beatmaps.")
         if shown:
             first_id = self.tree.get_children()[0]
             self.tree.selection_set(first_id)
             self.tree.focus(first_id)
+        else:
+            self.update_selection_status()
 
     def sort_key(self, row: BeatmapListEntry):
         if self.sort_column == "uploaded":
@@ -3183,6 +3259,17 @@ class BeatmapBrowserDialog(tk.Toplevel):
                 rows.append(self._visible_rows[idx])
         return rows
 
+    def select_all_visible(self) -> None:
+        all_ids = self.tree.get_children()
+        if all_ids:
+            self.tree.selection_set(all_ids)
+            self.tree.focus(all_ids[0])
+        self.update_selection_status()
+
+    def clear_selection(self) -> None:
+        self.tree.selection_remove(self.tree.selection())
+        self.update_selection_status()
+
     def on_tree_right_click(self, event) -> None:  # type: ignore[no-untyped-def]
         row_id = self.tree.identify_row(event.y)
         if row_id:
@@ -3212,19 +3299,30 @@ class BeatmapBrowserDialog(tk.Toplevel):
         if not rows:
             messagebox.showerror("No Selection", "Select one or more beatmaps first.", parent=self)
             return
-        self.result = [parse_song_from_record(row.record, row.beatmap_id) for row in rows]
+        songs = [parse_song_from_record(row.record, row.beatmap_id) for row in rows]
+        if self.on_add_songs is not None:
+            added, skipped = self.on_add_songs(songs)
+            if added == 0:
+                self.set_status_message(f"No songs added. Skipped duplicates: {skipped}.")
+            elif skipped:
+                self.set_status_message(f"Added {added} songs. Skipped duplicates: {skipped}.")
+            else:
+                self.set_status_message(f"Added {added} songs to the playlist.")
+            return
+        self.result = songs
         self.destroy()
 
 
 class VisualBeatmapBrowserDialog(tk.Toplevel):
     COVER_BOX_SIZE = 180
 
-    def __init__(self, parent: tk.Misc):
+    def __init__(self, parent: tk.Misc, on_add_song: Callable[[SongEntry], bool] | None = None):
         super().__init__(parent)
         self.title("Visual Beatmap Browser")
         self.geometry("1180x760")
         self.minsize(980, 620)
         self.result: list[SongEntry] = []
+        self.on_add_song = on_add_song
 
         self.page_var = tk.StringVar(value="1")
         self.page_info_var = tk.StringVar(value="Loading...")
@@ -3462,7 +3560,12 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
         label.configure(image=image, text="")
 
     def add_single_row(self, row: BeatmapListEntry) -> None:
-        self.result = [parse_song_from_record(row.record, row.beatmap_id)]
+        song = parse_song_from_record(row.record, row.beatmap_id)
+        if self.on_add_song is not None:
+            added = self.on_add_song(song)
+            self.status_var.set("Added to playlist." if added else "Song already in playlist.")
+            return
+        self.result = [song]
         self.destroy()
 
     def open_row_website(self, row: BeatmapListEntry) -> None:
@@ -3474,9 +3577,10 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
 
 
 class PlaylistEditorApp(BASE_TK_CLASS):
-    def __init__(self) -> None:
+    def __init__(self, instance_guard: SingleInstanceGuard | None = None) -> None:
         super().__init__()
-        self.title("SR Playlist Forge")
+        self.instance_guard = instance_guard
+        self.title("SR Playlist Forge v.2.1")
         self.geometry("1220x700")
         self.minsize(1120, 620)
 
@@ -3512,6 +3616,8 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.session_save_after_id: str | None = None
         self.quest_status_after_id: str | None = None
         self.restoring_session = False
+        self.creation_date_auto_managed = True
+        self._suppress_creation_date_manual_detection = False
         self.sort_column: str | None = None
         self.sort_desc: bool = False
         self.current_view_indices: list[int] = []
@@ -3528,6 +3634,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
         self.playlist_vars["playlistNumber"].trace_add("write", lambda *_: self.update_generated_filename())
         self.playlist_vars["namePlaylist"].trace_add("write", lambda *_: self.update_generated_filename())
+        self.playlist_vars["creationDateHuman"].trace_add("write", lambda *_: self.on_creation_date_human_changed())
         for key in ("gradientTop", "gradientDown", "colorTitle", "colorTexture"):
             self.playlist_vars[key].trace_add("write", lambda *_ignored, field=key: self.update_color_preview(field))
         for var in self.playlist_vars.values():
@@ -3570,7 +3677,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
         top_bar = ttk.Frame(root)
         top_bar.pack(fill="x", pady=(0, 8))
-        ttk.Label(top_bar, text="SR Playlist Forge", style="Title.TLabel").pack(side="left")
+        ttk.Label(top_bar, text="SR Playlist Forge v.2.1", style="Title.TLabel").pack(side="left")
         ttk.Label(top_bar, textvariable=self.stats_var).pack(side="left", padx=(12, 0))
         ttk.Checkbutton(
             top_bar,
@@ -3665,7 +3772,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         ttk.Button(quick_actions, text="Add .synth Files", width=16, command=self.add_synth_files_dialog).pack(
             side="left", padx=6
         )
-        ttk.Button(quick_actions, text="Browse Beatmaps", width=16, command=self.open_beatmap_browser).pack(
+        ttk.Button(quick_actions, text="List Browser", width=16, command=self.open_beatmap_browser).pack(
             side="left", padx=6
         )
         ttk.Button(quick_actions, text="Visual Browser", width=16, command=self.open_visual_browser).pack(
@@ -3733,7 +3840,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             "trackDuration": "duration",
             "addedTime": "added",
         }
-        self.tree = ttk.Treeview(table_frame, columns=cols, show="headings", selectmode="browse")
+        self.tree = ttk.Treeview(table_frame, columns=cols, show="headings", selectmode="extended")
         for c in cols:
             self.tree.heading(c, text=self.column_labels[c], command=lambda col=c: self.on_column_click(col))
             width = 80
@@ -3866,6 +3973,15 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         if not selection:
             return None
         return int(selection[0])
+
+    def selected_indices(self) -> list[int]:
+        selected: list[int] = []
+        for item_id in self.tree.selection():
+            try:
+                selected.append(int(item_id))
+            except ValueError:
+                continue
+        return selected
 
     def refresh_table(self, keep_index: int | None = None) -> None:
         self.update_column_headers()
@@ -4206,7 +4322,26 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         except Exception:
             self.generated_filename_var.set("Invalid playlist number or name")
 
+    def set_creation_date_timestamp(self, ts: int, *, auto_managed: bool) -> None:
+        self._suppress_creation_date_manual_detection = True
+        try:
+            self.playlist_vars["creationDate"].set(str(ts))
+            self.playlist_vars["creationDateHuman"].set(timestamp_to_local_text(ts))
+        finally:
+            self._suppress_creation_date_manual_detection = False
+        self.creation_date_auto_managed = auto_managed
+
+    def refresh_creation_date_if_auto(self) -> None:
+        if self.creation_date_auto_managed:
+            self.set_creation_date_timestamp(int(time.time()), auto_managed=True)
+
+    def on_creation_date_human_changed(self) -> None:
+        if self._suppress_creation_date_manual_detection or self.restoring_session:
+            return
+        self.creation_date_auto_managed = False
+
     def build_playlist_export_payload(self) -> tuple[dict[str, Any], str]:
+        self.refresh_creation_date_if_auto()
         creation_ts = local_text_to_timestamp(self.playlist_vars["creationDateHuman"].get())
         self.playlist_vars["creationDate"].set(str(creation_ts))
         export_indices = self.get_visible_indices()
@@ -4489,18 +4624,20 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.url_var.set("")
 
     def open_beatmap_browser(self) -> None:
-        dialog = BeatmapBrowserDialog(self)
+        dialog = BeatmapBrowserDialog(self, on_add_songs=self.add_songs_from_list_browser)
         self.wait_window(dialog)
         if dialog.result is None:
             return
 
         if not dialog.result:
             return
+        self.add_songs_from_list_browser(dialog.result)
 
+    def add_songs_from_list_browser(self, songs: list[SongEntry]) -> tuple[int, int]:
         added = 0
         skipped = 0
         keep_index: int | None = None
-        for song in dialog.result:
+        for song in songs:
             if self.hash_exists(song.hash):
                 skipped += 1
                 continue
@@ -4508,24 +4645,24 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             keep_index = len(self.songs) - 1
             added += 1
 
-        if added == 0:
-            messagebox.showinfo("Browse Beatmaps", f"No songs were added. Skipped duplicates: {skipped}.")
-            return
+        if added > 0:
+            self.refresh_table(keep_index=keep_index)
+        return added, skipped
 
-        self.refresh_table(keep_index=keep_index)
-        if skipped:
-            messagebox.showinfo("Browse Beatmaps", f"Added {added} songs. Skipped duplicates: {skipped}.")
+    def add_song_from_visual_browser(self, song: SongEntry) -> bool:
+        if self.hash_exists(song.hash):
+            messagebox.showinfo("Visual Browser", "That song is already in the playlist.")
+            return False
+        self.songs.append(song)
+        self.refresh_table(keep_index=len(self.songs) - 1)
+        return True
 
     def open_visual_browser(self) -> None:
-        dialog = VisualBeatmapBrowserDialog(self)
+        dialog = VisualBeatmapBrowserDialog(self, on_add_song=self.add_song_from_visual_browser)
         self.wait_window(dialog)
         if not dialog.result:
             return
-        if self.hash_exists(dialog.result[0].hash):
-            messagebox.showinfo("Visual Browser", "That song is already in the playlist.")
-            return
-        self.songs.append(dialog.result[0])
-        self.refresh_table(keep_index=len(self.songs) - 1)
+        self.add_song_from_visual_browser(dialog.result[0])
 
     def extract_beatmap_id_from_synth_filename(self, file_path: str) -> str | None:
         cleaned = file_path.strip().strip("{}").strip('"').strip("'")
@@ -4617,11 +4754,14 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.refresh_table(keep_index=idx)
 
     def remove_selected(self) -> None:
-        idx = self.selected_index()
-        if idx is None:
+        indices = self.selected_indices()
+        if not indices:
             return
-        del self.songs[idx]
-        keep_idx = min(idx, len(self.songs) - 1) if self.songs else None
+        for idx in sorted(indices, reverse=True):
+            if 0 <= idx < len(self.songs):
+                del self.songs[idx]
+        anchor_idx = min(indices)
+        keep_idx = min(anchor_idx, len(self.songs) - 1) if self.songs else None
         self.refresh_table(keep_index=keep_idx)
 
     def clear_all_songs(self) -> None:
@@ -4633,9 +4773,13 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.refresh_table(keep_index=None)
 
     def move_selected(self, delta: int) -> None:
-        idx = self.selected_index()
-        if idx is None:
+        indices = self.selected_indices()
+        if not indices:
             return
+        if len(indices) != 1:
+            messagebox.showinfo("Move Songs", "Select exactly one song to move up or down.")
+            return
+        idx = indices[0]
         new_idx = idx + delta
         if new_idx < 0 or new_idx >= len(self.songs):
             return
@@ -4674,8 +4818,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 self.playlist_vars[key].set(str(raw[key]))
 
         imported_ts = force_int(raw.get("creationDate"), int(time.time()))
-        self.playlist_vars["creationDate"].set(str(imported_ts))
-        self.playlist_vars["creationDateHuman"].set(timestamp_to_local_text(imported_ts))
+        self.set_creation_date_timestamp(imported_ts, auto_managed=False)
 
         stem = Path(source_name).stem
         m = re.match(r"^(\d{1,6})__", stem)
@@ -4726,8 +4869,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                     self.playlist_vars[key].set(str(raw[key]))
 
             imported_ts = force_int(raw.get("creationDate"), int(time.time()))
-            self.playlist_vars["creationDate"].set(str(imported_ts))
-            self.playlist_vars["creationDateHuman"].set(timestamp_to_local_text(imported_ts))
+            self.set_creation_date_timestamp(imported_ts, auto_managed=False)
 
             # Infer playlist number from filename prefix like 000007__halloween.playlist
             stem = Path(path).stem
@@ -4880,16 +5022,32 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         enrich_song_download_metadata_shared(song)
 
     def download_selected(self) -> None:
-        idx = self.selected_index()
-        if idx is None:
+        indices = self.selected_indices()
+        if not indices:
             messagebox.showerror("No Selection", "Select a song to download.")
             return
         out_dir = filedialog.askdirectory(title="Select Download Folder")
         if not out_dir:
             return
-        song = self.songs[idx]
-        label = song.name or song.hash[:10] or "song"
-        self._start_download_worker(self._worker_download_selected, (song, Path(out_dir)), f"Starting download: {label}")
+        songs_snapshot = [self.songs[idx] for idx in indices if 0 <= idx < len(self.songs)]
+        if not songs_snapshot:
+            messagebox.showerror("No Selection", "Select a song to download.")
+            return
+        if len(songs_snapshot) == 1:
+            song = songs_snapshot[0]
+            label = song.name or song.hash[:10] or "song"
+            self._start_download_worker(
+                self._worker_download_selected,
+                (song, Path(out_dir)),
+                f"Starting download: {label}",
+            )
+            return
+        total_songs = len(songs_snapshot)
+        self._start_download_worker(
+            self._worker_download_all,
+            (songs_snapshot, Path(out_dir)),
+            f"Starting selected downloads (0/{total_songs})",
+        )
 
     def _worker_download_selected(self, song: SongEntry, out_dir: Path) -> None:
         try:
@@ -5174,6 +5332,9 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             return
         payload = {
             "playlist_vars": {k: v.get() for k, v in self.playlist_vars.items()},
+            "playlist_state": {
+                "creation_date_auto_managed": self.creation_date_auto_managed,
+            },
             "theme_mode": self.theme_mode_var.get(),
             "quest_vars": {
                 "song_dir": self.quest_song_dir_var.get(),
@@ -5202,6 +5363,11 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 for key, var in self.playlist_vars.items():
                     if key in playlist_raw:
                         var.set(str(playlist_raw[key]))
+            playlist_state = raw.get("playlist_state", {})
+            if isinstance(playlist_state, dict):
+                self.creation_date_auto_managed = bool(
+                    playlist_state.get("creation_date_auto_managed", self.creation_date_auto_managed)
+                )
 
             quest_raw = raw.get("quest_vars", {})
             if isinstance(quest_raw, dict):
@@ -5239,6 +5405,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             self.refresh_table(keep_index=0 if self.songs else None)
         finally:
             self.restoring_session = False
+        self.refresh_creation_date_if_auto()
         self.save_session()
 
     def on_close(self) -> None:
@@ -5249,13 +5416,29 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 pass
             self.quest_status_after_id = None
         self.save_session()
+        if self.instance_guard is not None:
+            self.instance_guard.release()
+            self.instance_guard = None
         self.destroy()
 
 
 def main() -> None:
     install_global_exception_hooks()
-    app = PlaylistEditorApp()
-    app.mainloop()
+    instance_guard = SingleInstanceGuard()
+    if not instance_guard.acquire():
+        show_fatal_error_dialog(
+            "SR Playlist Forge Already Running",
+            "SR Playlist Forge is already open.\n\n"
+            "Please switch to the existing window or close it before starting another instance.",
+        )
+        return
+    app: PlaylistEditorApp | None = None
+    try:
+        app = PlaylistEditorApp(instance_guard=instance_guard)
+        app.mainloop()
+    finally:
+        if app is None or instance_guard is not app.instance_guard:
+            instance_guard.release()
 
 
 if __name__ == "__main__":

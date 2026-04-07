@@ -1,13 +1,13 @@
 [Setup]
 AppId={{D2C1C3B4-9E3D-4F2D-9A67-5C8B6F52E5A1}
 AppName=SR Playlist Forge
-AppVersion=2.0
+AppVersion=2.1
 AppPublisher=jogu74
 DefaultDirName={autopf}\SR Playlist Forge
 DefaultGroupName=SR Playlist Forge
 DisableProgramGroupPage=yes
 OutputDir=E:\Codex\SR Playlist Forge\release\installer
-OutputBaseFilename=SR Playlist Forge 2.0 setup
+OutputBaseFilename=SR Playlist Forge 2.1 setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
