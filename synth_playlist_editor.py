@@ -1501,31 +1501,19 @@ def fetch_newer_beatmaps(
                 progress_cb(page, page_count, len(all_rows))
         return all_rows, total_count
 
-    newest_rows: list[BeatmapListEntry] = []
     latest_id = known_latest.beatmap_id
-    found_existing = False
-    loaded_count = len(first_page_rows)
-
-    for offset, page in enumerate(range(page_count, 0, -1), start=1):
-        rows, _, _ = fetch_beatmaps_page(page)
-        if page != 1:
-            loaded_count += len(rows)
-        if progress_cb:
-            progress_cb(offset, page_count, loaded_count)
-
-        newest_rows = rows + newest_rows
-        if any(row.beatmap_id == latest_id for row in rows):
-            found_existing = True
-            break
-
-    if not found_existing:
-        return newest_rows, total_count
-
     incoming: list[BeatmapListEntry] = []
-    for row in newest_rows:
-        if row.beatmap_id == latest_id:
-            break
-        incoming.append(row)
+    loaded_count = 0
+
+    for page in range(1, page_count + 1):
+        rows = first_page_rows if page == 1 else fetch_beatmaps_page(page)[0]
+        loaded_count += len(rows)
+        if progress_cb and page != 1:
+            progress_cb(page, page_count, loaded_count)
+        for row in rows:
+            if row.beatmap_id == latest_id:
+                return incoming, total_count
+            incoming.append(row)
     return incoming, total_count
 
 
