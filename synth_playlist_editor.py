@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import colorsys
 import json
 import io
 import msvcrt
 import os
 import queue
+import random
 import re
 import shutil
 import subprocess
@@ -103,6 +105,9 @@ THEME_PRESETS = {
         "warning": "#fde68a",
     },
 }
+
+KNOWN_PLAYLIST_TEXTURE_VALUES = tuple(range(12))
+KNOWN_PLAYLIST_ICON_VALUES = tuple(range(21))
 
 
 class DownloadCancelled(Exception):
@@ -3058,14 +3063,22 @@ class BeatmapBrowserDialog(tk.Toplevel):
         self.loading = is_loading
         self.set_status_message(message)
 
+    def can_update_ui(self) -> bool:
+        return self.winfo_exists() and hasattr(self, "tree") and self.tree.winfo_exists()
+
     def set_status_message(self, message: str) -> None:
         self.status_message = message
         self.update_selection_status()
 
     def update_selection_status(self) -> None:
-        selected_count = len(self.tree.selection()) if hasattr(self, "tree") else 0
-        self.status_var.set(self.status_message)
-        self.selection_var.set(f"Selected: {selected_count}")
+        if not self.can_update_ui():
+            return
+        try:
+            selected_count = len(self.tree.selection())
+            self.status_var.set(self.status_message)
+            self.selection_var.set(f"Selected: {selected_count}")
+        except tk.TclError:
+            pass
 
     def load_cached_rows(self) -> None:
         rows = load_cached_beatmaps()
@@ -3124,6 +3137,8 @@ class BeatmapBrowserDialog(tk.Toplevel):
             pass
 
     def _apply_progress_update(self, page: int, page_count: int, loaded_count: int) -> None:
+        if not self.can_update_ui():
+            return
         self.page_info_var.set(f"Loaded page {page} / {page_count}")
         self.set_status_message(f"Loaded {loaded_count} beatmaps so far...")
 
@@ -3148,6 +3163,8 @@ class BeatmapBrowserDialog(tk.Toplevel):
         added_count: int = 0,
         total_count: int | None = None,
     ) -> None:
+        if not self.can_update_ui():
+            return
         self.set_loading_state(False, "Ready")
         if err is not None:
             self.set_status_message(f"Load failed: {err}")
@@ -3568,7 +3585,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
     def __init__(self, instance_guard: SingleInstanceGuard | None = None) -> None:
         super().__init__()
         self.instance_guard = instance_guard
-        self.title("SR Playlist Forge v.2.1")
+        self.title("SR Playlist Forge v.2.2")
         self.geometry("1220x700")
         self.minsize(1120, 620)
 
@@ -3665,7 +3682,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
         top_bar = ttk.Frame(root)
         top_bar.pack(fill="x", pady=(0, 8))
-        ttk.Label(top_bar, text="SR Playlist Forge v.2.1", style="Title.TLabel").pack(side="left")
+        ttk.Label(top_bar, text="SR Playlist Forge v.2.2", style="Title.TLabel").pack(side="left")
         ttk.Label(top_bar, textvariable=self.stats_var).pack(side="left", padx=(12, 0))
         ttk.Checkbutton(
             top_bar,
@@ -3732,8 +3749,15 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 cell.grid(row=row, column=col, padx=6, pady=4, sticky="we")
                 cell.columnconfigure(0, weight=1)
                 ttk.Entry(cell, textvariable=self.playlist_vars[key], width=28).grid(row=0, column=0, sticky="we")
+                if key == "creationDateHuman":
+                    ttk.Button(cell, text="Now", width=8, command=self.set_creation_date_to_now).grid(
+                        row=0, column=1, padx=(6, 0), sticky="w"
+                    )
+                    info_col = 2
+                else:
+                    info_col = 1
                 info_label = ttk.Label(cell, text="(i)")
-                info_label.grid(row=0, column=1, padx=(6, 0), sticky="w")
+                info_label.grid(row=0, column=info_col, padx=(6, 0), sticky="w")
                 self._tooltips.append(HoverTooltip(info_label, tip))
             else:
                 ttk.Entry(meta, textvariable=self.playlist_vars[key], width=36).grid(
@@ -3744,6 +3768,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         playlist_actions.grid(row=5, column=0, columnspan=4, sticky="we", pady=(8, 0))
         ttk.Label(playlist_actions, text="Export filename:").pack(side="left")
         ttk.Label(playlist_actions, textvariable=self.generated_filename_var).pack(side="left", padx=(6, 14))
+        ttk.Button(playlist_actions, text="Randomize Look", command=self.randomize_playlist_look).pack(side="right", padx=(6, 0))
         ttk.Button(playlist_actions, text="Add .playlist", command=self.add_playlist).pack(side="right", padx=(6, 0))
         ttk.Button(playlist_actions, text="Export .playlist", command=self.export_playlist).pack(side="right")
 
@@ -4327,6 +4352,48 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         if self._suppress_creation_date_manual_detection or self.restoring_session:
             return
         self.creation_date_auto_managed = False
+
+    def set_creation_date_to_now(self) -> None:
+        self.set_creation_date_timestamp(int(time.time()), auto_managed=False)
+
+    def randomize_playlist_look(self) -> None:
+        rng = random.Random(time.time_ns())
+        base_hue = rng.random()
+        scheme = rng.choice(["analogous", "split", "triad"])
+        if scheme == "analogous":
+            accent_hue = (base_hue + rng.choice([-0.08, 0.08])) % 1.0
+        elif scheme == "split":
+            accent_hue = (base_hue + rng.choice([0.42, -0.42])) % 1.0
+        else:
+            accent_hue = (base_hue + rng.choice([1 / 3, 2 / 3])) % 1.0
+
+        top_hex = self._hsv_to_hex(base_hue, rng.uniform(0.35, 0.6), rng.uniform(0.82, 0.98))
+        down_hex = self._hsv_to_hex((base_hue + rng.uniform(-0.06, 0.06)) % 1.0, rng.uniform(0.65, 0.9), rng.uniform(0.22, 0.45))
+        texture_hex = self._hsv_to_hex(accent_hue, rng.uniform(0.45, 0.75), rng.uniform(0.55, 0.85))
+
+        self.playlist_vars["gradientTop"].set(top_hex)
+        self.playlist_vars["gradientDown"].set(down_hex)
+        self.playlist_vars["colorTexture"].set(texture_hex)
+        self.playlist_vars["colorTitle"].set(self._title_color_for_background(top_hex, down_hex))
+        self.playlist_vars["SelectedTexture"].set(str(rng.choice(KNOWN_PLAYLIST_TEXTURE_VALUES)))
+        self.playlist_vars["SelectedIconIndex"].set(str(rng.choice(KNOWN_PLAYLIST_ICON_VALUES)))
+
+    def _hsv_to_hex(self, hue: float, saturation: float, value: float) -> str:
+        red, green, blue = colorsys.hsv_to_rgb(hue % 1.0, max(0.0, min(1.0, saturation)), max(0.0, min(1.0, value)))
+        return f"#{int(round(red * 255)):02X}{int(round(green * 255)):02X}{int(round(blue * 255)):02X}"
+
+    def _title_color_for_background(self, top_hex: str, down_hex: str) -> str:
+        luminance = (self._hex_luminance(top_hex) + self._hex_luminance(down_hex)) / 2.0
+        return "#0F172A" if luminance > 0.68 else "#FFFFFF"
+
+    def _hex_luminance(self, value: str) -> float:
+        text = value.strip().lstrip("#")
+        if len(text) != 6:
+            return 0.0
+        red = int(text[0:2], 16) / 255.0
+        green = int(text[2:4], 16) / 255.0
+        blue = int(text[4:6], 16) / 255.0
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 
     def build_playlist_export_payload(self) -> tuple[dict[str, Any], str]:
         self.refresh_creation_date_if_auto()
