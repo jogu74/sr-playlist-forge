@@ -4,7 +4,6 @@ from __future__ import annotations
 import colorsys
 import json
 import io
-import msvcrt
 import os
 import queue
 import random
@@ -26,9 +25,14 @@ from tkinter import scrolledtext
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote_plus, urljoin
+from urllib.parse import quote_plus, unquote, urljoin
 from urllib.request import Request, urlopen
 import webbrowser
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 try:
     import customtkinter as ctk
@@ -512,8 +516,56 @@ def parse_beatmap_id(url_text: str) -> str | None:
 
 
 def safe_filename(name: str) -> str:
-    cleaned = "".join(ch for ch in name if ch.isalnum() or ch in (" ", "-", "_", ".")).strip()
+    base_name = Path(str(name).replace("\\", "/")).name
+    cleaned = "".join(ch for ch in base_name if ch.isalnum() or ch in (" ", "-", "_", ".")).strip().strip(".")
     return cleaned[:120] or "beatmap"
+
+
+def safe_download_filename(name: str, fallback_stem: str = "beatmap", extension: str = ".synth") -> str:
+    stem = safe_filename(Path(str(name)).stem or fallback_stem)
+    suffix = Path(str(name)).suffix.lower()
+    if suffix != extension.lower():
+        suffix = extension
+    return f"{stem}{suffix}"
+
+
+def safe_child_filename(name: str, fallback_stem: str = "file") -> str:
+    raw_name = Path(str(name).replace("\\", "/")).name
+    suffix = Path(raw_name).suffix
+    stem = safe_filename(Path(raw_name).stem or fallback_stem)
+    safe_suffix = "".join(ch for ch in suffix if ch.isalnum() or ch == ".")[:20]
+    return f"{stem}{safe_suffix}"
+
+
+def unique_child_path(parent: Path, filename: str) -> Path:
+    parent = parent.resolve()
+    out_path = (parent / filename).resolve()
+    try:
+        out_path.relative_to(parent)
+    except ValueError as exc:
+        raise ValueError(f"Unsafe output filename: {filename}") from exc
+
+    if not out_path.exists():
+        return out_path
+
+    stem = out_path.stem
+    suffix = out_path.suffix
+    for i in range(2, 1000):
+        candidate_path = (parent / f"{stem}_{i}{suffix}").resolve()
+        try:
+            candidate_path.relative_to(parent)
+        except ValueError as exc:
+            raise ValueError(f"Unsafe output filename: {filename}") from exc
+        if not candidate_path.exists():
+            return candidate_path
+    raise FileExistsError(f"Could not find an available filename for {filename}.")
+
+
+def join_remote_path(remote_dir: str, name: str) -> str:
+    safe_name = Path(str(name).replace("\\", "/")).name
+    if not safe_name or safe_name in {".", ".."}:
+        raise ValueError(f"Unsafe remote filename: {name}")
+    return f"{remote_dir.rstrip('/')}/{safe_name}"
 
 
 def normalize_text(value: str) -> str:
@@ -679,7 +731,10 @@ class SingleInstanceGuard:
         handle = self.lock_path.open("a+", encoding="utf-8")
         try:
             handle.seek(0)
-            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            if os.name == "nt":
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             handle.close()
             return False
@@ -695,7 +750,10 @@ class SingleInstanceGuard:
             return
         try:
             self.handle.seek(0)
-            msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+            if os.name == "nt":
+                msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
         except OSError:
             pass
         try:
@@ -1028,11 +1086,17 @@ def run_adb_command(adb_path: str, args: list[str], timeout: int = 120) -> subpr
     )
 
 
+def adb_error_text(result: subprocess.CompletedProcess[Any], fallback: str) -> str:
+    stderr = result.stderr.decode("utf-8", errors="replace") if isinstance(result.stderr, bytes) else str(result.stderr or "")
+    stdout = result.stdout.decode("utf-8", errors="replace") if isinstance(result.stdout, bytes) else str(result.stdout or "")
+    return stderr.strip() or stdout.strip() or fallback
+
+
 def list_adb_devices(adb_path: str) -> list[str]:
     run_adb_command(adb_path, ["start-server"], timeout=30)
     result = run_adb_command(adb_path, ["devices"], timeout=30)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "adb devices failed.")
+        raise RuntimeError(adb_error_text(result, "adb devices failed."))
 
     devices: list[str] = []
     for line in result.stdout.splitlines():
@@ -1048,20 +1112,20 @@ def list_adb_devices(adb_path: str) -> list[str]:
 def ensure_device_dir(adb_path: str, remote_dir: str) -> None:
     result = run_adb_command(adb_path, ["shell", "mkdir", "-p", remote_dir], timeout=60)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Failed to create {remote_dir} on device.")
+        raise RuntimeError(adb_error_text(result, f"Failed to create {remote_dir} on device."))
 
 
 def adb_push_file(adb_path: str, local_path: Path, remote_path: str, timeout: int = 300) -> None:
     result = run_adb_command(adb_path, ["push", str(local_path), remote_path], timeout=timeout)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Failed to push {local_path.name}.")
+        raise RuntimeError(adb_error_text(result, f"Failed to push {local_path.name}."))
 
 
 def adb_pull_file(adb_path: str, remote_path: str, local_path: Path, timeout: int = 300) -> None:
     local_path.parent.mkdir(parents=True, exist_ok=True)
     result = run_adb_command(adb_path, ["pull", remote_path, str(local_path)], timeout=timeout)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Failed to pull {remote_path}.")
+        raise RuntimeError(adb_error_text(result, f"Failed to pull {remote_path}."))
 
 
 def adb_remote_file_exists(adb_path: str, remote_path: str) -> bool:
@@ -1077,7 +1141,7 @@ def adb_remote_file_exists(adb_path: str, remote_path: str) -> bool:
 def list_remote_files(adb_path: str, remote_dir: str) -> list[str]:
     result = run_adb_command(adb_path, ["shell", "ls", "-1", remote_dir], timeout=60)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Failed to list {remote_dir}.")
+        raise RuntimeError(adb_error_text(result, f"Failed to list {remote_dir}."))
     items: list[str] = []
     for line in result.stdout.splitlines():
         name = line.strip()
@@ -1092,13 +1156,13 @@ def list_remote_files(adb_path: str, remote_dir: str) -> list[str]:
 def adb_delete_file(adb_path: str, remote_path: str) -> None:
     result = run_adb_command(adb_path, ["shell", "rm", "-f", remote_path], timeout=60)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Failed to delete {remote_path}.")
+        raise RuntimeError(adb_error_text(result, f"Failed to delete {remote_path}."))
 
 
 def adb_read_text_file(adb_path: str, remote_path: str) -> str:
     result = run_adb_command(adb_path, ["shell", "cat", remote_path], timeout=60)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Failed to read {remote_path}.")
+        raise RuntimeError(adb_error_text(result, f"Failed to read {remote_path}."))
     return result.stdout
 
 
@@ -1116,9 +1180,7 @@ def adb_read_file_bytes(adb_path: str, remote_path: str) -> bytes:
         **subprocess_hidden_window_kwargs(),
     )
     if result.returncode != 0:
-        stderr_text = result.stderr.decode("utf-8", errors="replace").strip()
-        stdout_text = result.stdout.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(stderr_text or stdout_text or f"Failed to read {remote_path}.")
+        raise RuntimeError(adb_error_text(result, f"Failed to read {remote_path}."))
     return bytes(result.stdout)
 
 
@@ -1192,7 +1254,7 @@ def collect_playlist_hashes_from_remote(adb_path: str, playlist_dir: str) -> set
     for name in names:
         if not name.lower().endswith(".playlist"):
             continue
-        remote_path = f"{playlist_dir.rstrip('/')}/{name}"
+        remote_path = join_remote_path(playlist_dir, name)
         try:
             raw = adb_read_text_file(adb_path, remote_path)
             payload = json.loads(raw)
@@ -1488,7 +1550,7 @@ def build_headset_song_index_fast(
         if not name.lower().endswith(".synth"):
             continue
         filenames.append(name)
-        remote_path = f"{songs_dir.rstrip('/')}/{name}"
+        remote_path = join_remote_path(songs_dir, name)
         cached = HEADSET_SYNTH_METADATA_CACHE.get(remote_path)
         if cached is not None:
             identity = HeadsetSongIdentity(**asdict(cached))
@@ -1872,7 +1934,7 @@ def extract_filename_from_headers(content_disposition: str | None) -> str:
     # Handles both filename="x.synth" and filename*=UTF-8''x.synth
     m = re.search(r"filename\*=UTF-8''([^;]+)", content_disposition, flags=re.IGNORECASE)
     if m:
-        return m.group(1).strip().strip('"')
+        return unquote(m.group(1).strip().strip('"'))
     m = re.search(r'filename="?([^";]+)"?', content_disposition, flags=re.IGNORECASE)
     if m:
         return m.group(1).strip()
@@ -1938,19 +2000,9 @@ def download_song_to_dir(
                 if not filename:
                     basename = os.path.basename(final_url.split("?", 1)[0])
                     filename = basename if basename else ""
-                if not filename.lower().endswith(".synth"):
-                    prefix = safe_filename(song.name) if song.name else (song.beatmapId or song.hash[:10])
-                    filename = f"{prefix}.synth"
-
-                out_path = out_dir / filename
-                if out_path.exists():
-                    stem = out_path.stem
-                    suffix = out_path.suffix
-                    for i in range(2, 1000):
-                        candidate_path = out_dir / f"{stem}_{i}{suffix}"
-                        if not candidate_path.exists():
-                            out_path = candidate_path
-                            break
+                fallback_stem = safe_filename(song.name) if song.name else (song.beatmapId or song.hash[:10])
+                filename = safe_download_filename(filename, fallback_stem=fallback_stem)
+                out_path = unique_child_path(out_dir, filename)
 
                 total_size = None
                 total_header = response.headers.get("Content-Length")
@@ -2387,7 +2439,7 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
                 by_id, by_hash, by_title_artist = build_cached_beatmap_identity_maps()
                 details: dict[str, HeadsetSongIdentity] = {}
                 for name in synth_files:
-                    remote_path = f"{self.songs_dir.rstrip('/')}/{name}"
+                    remote_path = join_remote_path(self.songs_dir, name)
                     cached = HEADSET_SYNTH_METADATA_CACHE.get(remote_path)
                     if cached is not None:
                         identity = HeadsetSongIdentity(**asdict(cached))
@@ -2555,7 +2607,7 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
         def worker() -> None:
             failed: list[str] = []
             for name in selected:
-                remote_path = f"{self.songs_dir.rstrip('/')}/{name}"
+                remote_path = join_remote_path(self.songs_dir, name)
                 try:
                     adb_delete_file(self.adb_path, remote_path)
                     HEADSET_SYNTH_METADATA_CACHE.pop(remote_path, None)
@@ -2580,8 +2632,8 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
             copied = 0
             base_dir = Path(out_dir)
             for name in selected:
-                remote_path = f"{self.songs_dir.rstrip('/')}/{name}"
-                local_path = base_dir / name
+                remote_path = join_remote_path(self.songs_dir, name)
+                local_path = unique_child_path(base_dir, safe_child_filename(name, "song"))
                 try:
                     adb_pull_file(self.adb_path, remote_path, local_path)
                     copied += 1
@@ -2618,7 +2670,7 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
         def worker() -> None:
             failed: list[str] = []
             for name in selected:
-                remote_path = f"{self.songs_dir.rstrip('/')}/{name}"
+                remote_path = join_remote_path(self.songs_dir, name)
                 try:
                     adb_delete_file(self.adb_path, remote_path)
                     HEADSET_SYNTH_METADATA_CACHE.pop(remote_path, None)
@@ -2821,7 +2873,7 @@ class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
                     headset_hashes, headset_filenames, headset_identities = set(), [], {}
                 status_map: dict[str, str] = {}
                 for name in self.files:
-                    remote_path = f"{self.playlist_dir.rstrip('/')}/{name}"
+                    remote_path = join_remote_path(self.playlist_dir, name)
                     try:
                         raw = adb_read_text_file(self.adb_path, remote_path)
                         payload = json.loads(raw)
@@ -2912,8 +2964,8 @@ class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
             copied = 0
             base_dir = Path(out_dir)
             for name in selected:
-                remote_path = f"{self.playlist_dir.rstrip('/')}/{name}"
-                local_path = base_dir / name
+                remote_path = join_remote_path(self.playlist_dir, name)
+                local_path = unique_child_path(base_dir, safe_child_filename(name, "playlist"))
                 try:
                     adb_pull_file(self.adb_path, remote_path, local_path)
                     copied += 1
@@ -2937,7 +2989,7 @@ class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
         def worker() -> None:
             failed: list[str] = []
             for name in selected:
-                remote_path = f"{self.playlist_dir.rstrip('/')}/{name}"
+                remote_path = join_remote_path(self.playlist_dir, name)
                 try:
                     adb_delete_file(self.adb_path, remote_path)
                 except Exception as err:  # noqa: BLE001
@@ -2973,7 +3025,7 @@ class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
         def worker() -> None:
             failed: list[str] = []
             for name in selected:
-                remote_path = f"{self.playlist_dir.rstrip('/')}/{name}"
+                remote_path = join_remote_path(self.playlist_dir, name)
                 try:
                     adb_delete_file(self.adb_path, remote_path)
                 except Exception as err:  # noqa: BLE001
@@ -3160,7 +3212,7 @@ class MissingPlaylistSongsDialog(BASE_DIALOG_CLASS):
                         if not (song.beatmapId or song.downloadUrl):
                             raise RuntimeError("Song is not mapped to a downloadable Synthriderz custom beatmap.")
                         local_file, _ = download_song_to_dir(song, out_dir)
-                        remote_path = f"{self.songs_dir.rstrip('/')}/{local_file.name}"
+                        remote_path = join_remote_path(self.songs_dir, local_file.name)
                         adb_push_file(self.adb_path, local_file, remote_path)
                         HEADSET_SYNTH_METADATA_CACHE.pop(remote_path, None)
                         transferred += 1
@@ -4263,7 +4315,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             except Exception:
                 pass
         self.instance_guard = instance_guard
-        self.title("SR Playlist Forge v.2.2")
+        self.title("SR Playlist Forge v.2.5")
         apply_app_window_icon(self)
         self.geometry("1220x700")
         self.minsize(1120, 620)
@@ -4366,7 +4418,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
         top_bar = ttk.Frame(root)
         top_bar.pack(fill="x", pady=(0, 8))
-        ttk.Label(top_bar, text="SR Playlist Forge v.2.2", style="Title.TLabel").pack(side="left")
+        ttk.Label(top_bar, text="SR Playlist Forge v.2.5", style="Title.TLabel").pack(side="left")
         ttk.Label(top_bar, textvariable=self.stats_var).pack(side="left", padx=(12, 0))
 
         controls = ttk.Notebook(root)
@@ -4631,7 +4683,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         top_bar = ctk.CTkFrame(root, corner_radius=8)
         top_bar.pack(fill="x", pady=(0, 6))
         top_bar.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(top_bar, text="SR Playlist Forge v.2.2", font=ctk.CTkFont(size=16, weight="bold")).grid(
+        ctk.CTkLabel(top_bar, text="SR Playlist Forge v.2.5", font=ctk.CTkFont(size=16, weight="bold")).grid(
             row=0, column=0, padx=(12, 10), pady=6, sticky="w"
         )
         ctk.CTkLabel(top_bar, textvariable=self.stats_var).grid(row=0, column=1, padx=(0, 10), pady=6, sticky="w")
@@ -6335,7 +6387,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                                 cancel_cb=self.is_download_cancelled,
                             )
                             downloaded.append(local_file)
-                            remote_path = f"{quest_songs_dir.rstrip('/')}/{local_file.name}"
+                            remote_path = join_remote_path(quest_songs_dir, local_file.name)
                             if duplicate_mode == "skip" and adb_remote_file_exists(adb_path, remote_path):
                                 skipped_existing += 1
                                 continue
@@ -6361,7 +6413,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                         json.dumps(playlist_payload, indent=2, ensure_ascii=False),
                         encoding="utf-8",
                     )
-                    playlist_remote_path = f"{quest_playlist_dir.rstrip('/')}/{playlist_filename}"
+                    playlist_remote_path = join_remote_path(quest_playlist_dir, playlist_filename)
                     if not (duplicate_mode == "skip" and adb_remote_file_exists(adb_path, playlist_remote_path)):
                         self._queue_download_event(
                             "progress",

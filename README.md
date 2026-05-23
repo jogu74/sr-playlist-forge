@@ -59,7 +59,7 @@ Output:
 
 Installer output used by this repo:
 
-- `release\installer\SR Playlist Forge 2.2 setup.exe`
+- `release\installer\SR Playlist Forge 2.5 setup.exe`
 
 ### macOS
 
