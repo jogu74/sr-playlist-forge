@@ -31,14 +31,37 @@ from urllib.request import Request, urlopen
 import webbrowser
 
 try:
+    import customtkinter as ctk
+
+    ctk.deactivate_automatic_dpi_awareness()
+    ctk.set_widget_scaling(1.0)
+    ctk.set_window_scaling(1.0)
+    _ctk_theme_path = Path(__file__).resolve().parent / "assets" / "srpf_ctk_theme.json"
+    ctk.set_default_color_theme(str(_ctk_theme_path) if _ctk_theme_path.exists() else "blue")
+    ctk.set_appearance_mode("dark")
+    HAS_CUSTOMTKINTER = True
+except Exception:  # noqa: BLE001
+    ctk = None
+    HAS_CUSTOMTKINTER = False
+
+try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
 
-    BASE_TK_CLASS = TkinterDnD.Tk
     HAS_DND_SUPPORT = True
 except Exception:  # noqa: BLE001
     DND_FILES = None
-    BASE_TK_CLASS = tk.Tk
+    TkinterDnD = None
     HAS_DND_SUPPORT = False
+
+if HAS_CUSTOMTKINTER and ctk is not None:
+    BASE_TK_CLASS = ctk.CTk
+    BASE_DIALOG_CLASS = ctk.CTkToplevel
+elif HAS_DND_SUPPORT and TkinterDnD is not None:
+    BASE_TK_CLASS = TkinterDnD.Tk
+    BASE_DIALOG_CLASS = tk.Toplevel
+else:
+    BASE_TK_CLASS = tk.Tk
+    BASE_DIALOG_CLASS = tk.Toplevel
 
 try:
     from PIL import Image, ImageOps, ImageTk
@@ -51,6 +74,142 @@ except Exception:  # noqa: BLE001
     HAS_PILLOW = False
 
 ENABLE_HOVER_TOOLTIPS = not getattr(sys, "frozen", False)
+
+
+_APP_ICON_PHOTO: Any | None = None
+
+
+def app_resource_path(*parts: str) -> Path:
+    candidates: list[Path] = []
+    if hasattr(sys, "_MEIPASS"):
+        candidates.append(Path(getattr(sys, "_MEIPASS")).joinpath(*parts))
+    candidates.append(Path(__file__).resolve().parent.joinpath(*parts))
+    if getattr(sys, "frozen", False):
+        candidates.append(Path(sys.executable).resolve().parent.joinpath(*parts))
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def app_icon_photo() -> Any | None:
+    global _APP_ICON_PHOTO
+    if _APP_ICON_PHOTO is not None:
+        return _APP_ICON_PHOTO
+    icon_ico = app_resource_path("assets", "icon.ico")
+    icon_png = app_resource_path("icon.png")
+    try:
+        if HAS_PILLOW and Image is not None and ImageTk is not None and icon_ico.exists():
+            source = Image.open(icon_ico).convert("RGBA")
+            contained = ImageOps.contain(source, (64, 64), Image.Resampling.LANCZOS) if ImageOps is not None else source.resize((64, 64))
+            square = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+            square.paste(contained, ((64 - contained.width) // 2, (64 - contained.height) // 2), contained)
+            _APP_ICON_PHOTO = ImageTk.PhotoImage(square)
+        elif icon_png.exists():
+            _APP_ICON_PHOTO = tk.PhotoImage(file=str(icon_png))
+    except Exception:
+        _APP_ICON_PHOTO = None
+    return _APP_ICON_PHOTO
+
+
+def apply_app_window_icon(window: tk.Misc) -> None:
+    def apply_now() -> None:
+        try:
+            if not window.winfo_exists():
+                return
+        except Exception:
+            return
+        icon_ico = app_resource_path("assets", "icon.ico")
+        if icon_ico.exists():
+            try:
+                setattr(window, "_iconbitmap_method_called", True)
+            except Exception:
+                pass
+            try:
+                window.iconbitmap(str(icon_ico))
+            except Exception:
+                pass
+            try:
+                window.iconbitmap(default=str(icon_ico))
+            except Exception:
+                pass
+        photo = app_icon_photo()
+        if photo is not None:
+            try:
+                window.iconphoto(True, photo)
+            except Exception:
+                pass
+        apply_dark_title_bar(window)
+
+    apply_now()
+    for delay_ms in (50, 250, 500, 1000, 2000):
+        try:
+            window.after(delay_ms, apply_now)
+        except Exception:
+            pass
+    try:
+        window.after(350, lambda: force_ctk_dark_title_bar(window))
+    except Exception:
+        pass
+
+
+def force_ctk_dark_title_bar(window: tk.Misc) -> None:
+    try:
+        if getattr(window, "_srpf_dark_titlebar_forced", False):
+            return
+        if not window.winfo_exists():
+            return
+        setter = getattr(window, "_windows_set_titlebar_color", None)
+        if callable(setter):
+            setattr(window, "_srpf_dark_titlebar_forced", True)
+            setter("dark")
+            window.after(80, lambda: apply_dark_title_bar(window))
+    except Exception:
+        pass
+
+
+def apply_dark_title_bar(window: tk.Misc) -> None:
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        import ctypes.wintypes
+
+        user32 = ctypes.windll.user32
+        dwmapi = ctypes.windll.dwmapi
+        base_hwnd = int(window.winfo_id())
+        candidate_hwnds = [base_hwnd]
+        for getter in (
+            lambda hwnd: user32.GetParent(hwnd),
+            lambda hwnd: user32.GetAncestor(hwnd, 2),  # GA_ROOT
+        ):
+            try:
+                candidate = int(getter(base_hwnd))
+                if candidate:
+                    candidate_hwnds.append(candidate)
+            except Exception:
+                pass
+
+        enabled = ctypes.c_int(1)
+        caption_color = ctypes.c_int(0x00141110)  # COLORREF for #101114
+        text_color = ctypes.c_int(0x00ECE7E7)  # COLORREF for #E7E7EC
+        seen: set[int] = set()
+        for raw_hwnd in candidate_hwnds:
+            if raw_hwnd in seen:
+                continue
+            seen.add(raw_hwnd)
+            hwnd = ctypes.wintypes.HWND(raw_hwnd)
+            for attribute in (20, 19):  # DWMWA_USE_IMMERSIVE_DARK_MODE, older fallback
+                dwmapi.DwmSetWindowAttribute(
+                    hwnd,
+                    ctypes.c_int(attribute),
+                    ctypes.byref(enabled),
+                    ctypes.sizeof(enabled),
+                )
+            dwmapi.DwmSetWindowAttribute(hwnd, ctypes.c_int(35), ctypes.byref(caption_color), ctypes.sizeof(caption_color))
+            dwmapi.DwmSetWindowAttribute(hwnd, ctypes.c_int(36), ctypes.byref(text_color), ctypes.sizeof(text_color))
+    except Exception:
+        pass
 
 
 ID_RE = re.compile(r"/beatmaps/(\d+)")
@@ -83,31 +242,64 @@ THEME_PRESETS = {
         "input_fg": "#14213d",
         "select_bg": "#dbeafe",
         "select_fg": "#0f172a",
+        "table_even": "#ffffff",
+        "table_odd": "#f8fbff",
+        "table_heading": "#e6ecf8",
+        "drag_target": "#c7e7ff",
         "danger": "#991b1b",
         "success": "#166534",
         "warning": "#92400e",
     },
     "dark": {
-        "bg": "#0f172a",
-        "surface": "#111827",
-        "surface_alt": "#1f2937",
-        "fg": "#e5eefc",
-        "muted": "#94a3b8",
-        "accent": "#38bdf8",
-        "accent_text": "#0f172a",
-        "border": "#334155",
-        "input_bg": "#111827",
-        "input_fg": "#e5eefc",
-        "select_bg": "#1d4ed8",
-        "select_fg": "#eff6ff",
-        "danger": "#fecaca",
-        "success": "#bbf7d0",
-        "warning": "#fde68a",
+        "bg": "#101114",
+        "surface": "#1A1B20",
+        "surface_alt": "#23242B",
+        "fg": "#E7E7EC",
+        "muted": "#A6A6B0",
+        "accent": "#7B61FF",
+        "accent_text": "#FFFFFF",
+        "border": "#2A2C33",
+        "input_bg": "#141519",
+        "input_fg": "#F4F4F6",
+        "select_bg": "#4733B8",
+        "select_fg": "#FFFFFF",
+        "table_even": "#15161A",
+        "table_odd": "#1A1B20",
+        "table_heading": "#252731",
+        "drag_target": "#5D46D6",
+        "danger": "#FCA5A5",
+        "success": "#A7F3D0",
+        "warning": "#FDE68A",
     },
 }
 
 KNOWN_PLAYLIST_TEXTURE_VALUES = tuple(range(12))
 KNOWN_PLAYLIST_ICON_VALUES = tuple(range(21))
+DIFFICULTY_ORDER = ("Easy", "Normal", "Hard", "Expert", "Master", "Custom")
+DIFFICULTY_BADGE_COLORS = {
+    "Easy": ("#1FA968", "#FFFFFF"),
+    "Normal": ("#2E7DD7", "#FFFFFF"),
+    "Hard": ("#D69525", "#111111"),
+    "Expert": ("#D94A72", "#FFFFFF"),
+    "Master": ("#8D5CE6", "#FFFFFF"),
+    "Custom": ("#37B6C9", "#111111"),
+}
+DIFFICULTY_NUMERIC_LABELS = {
+    "0": "Easy",
+    "1": "Normal",
+    "2": "Hard",
+    "3": "Expert",
+    "4": "Master",
+    "5": "Custom",
+}
+DIFFICULTY_BADGE_INITIALS = {
+    "Easy": "E",
+    "Normal": "N",
+    "Hard": "H",
+    "Expert": "X",
+    "Master": "M",
+    "Custom": "C",
+}
 
 
 class DownloadCancelled(Exception):
@@ -153,6 +345,24 @@ class BeatmapListEntry:
     difficulty_text: str
     download_count: int
     record: dict[str, Any]
+
+
+def song_hash_from_record(record: dict[str, Any]) -> str:
+    song_hash = find_first_scalar(record, ["hash", "checksum", "mapHash", "songHash", "fileHash"])
+    return str(song_hash or "").strip().lower()
+
+
+def playlist_identity_sets(songs: list[SongEntry]) -> tuple[set[str], set[str]]:
+    hashes = {song.hash.strip().lower() for song in songs if song.hash.strip()}
+    beatmap_ids = {song.beatmapId.strip() for song in songs if song.beatmapId.strip()}
+    for song in songs:
+        source_id = parse_beatmap_id(song.sourceUrl)
+        if source_id:
+            beatmap_ids.add(source_id)
+        download_id = parse_beatmap_id(song.downloadUrl)
+        if download_id:
+            beatmap_ids.add(download_id)
+    return hashes, beatmap_ids
 
 
 @dataclass
@@ -229,6 +439,20 @@ def infer_difficulty_text_from_record(record: dict[str, Any], fallback_int: int)
         if labels:
             return ", ".join(labels)
     return str(fallback_int)
+
+
+def normalized_difficulty_labels(difficulty_text: str) -> list[str]:
+    labels: list[str] = []
+    known_by_lower = {label.lower(): label for label in DIFFICULTY_ORDER}
+    for raw_part in re.split(r"[,/|]+", str(difficulty_text or "")):
+        part = raw_part.strip()
+        if not part:
+            continue
+        label = DIFFICULTY_NUMERIC_LABELS.get(part, known_by_lower.get(part.lower(), part))
+        if label not in labels:
+            labels.append(label)
+    labels.sort(key=lambda label: DIFFICULTY_ORDER.index(label) if label in DIFFICULTY_ORDER else len(DIFFICULTY_ORDER))
+    return labels
 
 
 def timestamp_to_local_text(ts: int) -> str:
@@ -1824,10 +2048,11 @@ def fetch_song_from_url(url_text: str) -> SongEntry:
     return parse_song_from_record(rec, beatmap_id)
 
 
-class SongEditDialog(tk.Toplevel):
+class SongEditDialog(BASE_DIALOG_CLASS):
     def __init__(self, parent: tk.Misc, song: SongEntry):
         super().__init__(parent)
         self.title("Edit Song")
+        apply_app_window_icon(self)
         self.resizable(False, False)
         self.result: SongEntry | None = None
         self.song = SongEntry(**asdict(song))
@@ -1967,10 +2192,11 @@ class HoverTooltip:
             self.tipwindow = None
 
 
-class QuestTransferDialog(tk.Toplevel):
+class QuestTransferDialog(BASE_DIALOG_CLASS):
     def __init__(self, parent: tk.Misc, song_dir: str, playlist_dir: str):
         super().__init__(parent)
         self.title("Send to Quest")
+        apply_app_window_icon(self)
         self.resizable(False, False)
         self.result: dict[str, str] | None = None
 
@@ -2048,10 +2274,11 @@ class QuestTransferDialog(tk.Toplevel):
         self.destroy()
 
 
-class QuestSongManagerDialog(tk.Toplevel):
+class QuestSongManagerDialog(BASE_DIALOG_CLASS):
     def __init__(self, parent: tk.Misc, adb_path: str, songs_dir: str, playlist_dir: str):
         super().__init__(parent)
         self.title("Quest Songs")
+        apply_app_window_icon(self)
         self.geometry("1120x680")
         self.minsize(940, 540)
         self.adb_path = adb_path
@@ -2426,10 +2653,11 @@ class QuestSongManagerDialog(tk.Toplevel):
         self.status_var.set(f"Headset songs: {len(self.files)} | Showing: {len(self.visible_files)}")
 
 
-class QuestPlaylistManagerDialog(tk.Toplevel):
+class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
     def __init__(self, parent: tk.Misc, adb_path: str, playlist_dir: str):
         super().__init__(parent)
         self.title("Quest Playlists")
+        apply_app_window_icon(self)
         self.geometry("1080x660")
         self.minsize(900, 520)
         self.result: str | None = None
@@ -2779,11 +3007,12 @@ class QuestPlaylistManagerDialog(tk.Toplevel):
         self.status_var.set(f"Headset playlists: {len(self.files)} | Issues: {sum(1 for status in self.playlist_status.values() if status != 'OK')}")
 
 
-class MissingPlaylistSongsDialog(tk.Toplevel):
+class MissingPlaylistSongsDialog(BASE_DIALOG_CLASS):
     def __init__(self, parent: tk.Misc, adb_path: str, songs_dir: str, playlist_path: str, playlist_name: str):
         super().__init__(parent)
         self.parent_dialog = parent
         self.title(f"Missing Songs - {playlist_name}")
+        apply_app_window_icon(self)
         self.geometry("920x580")
         self.minsize(780, 440)
         self.adb_path = adb_path
@@ -2957,16 +3186,26 @@ class MissingPlaylistSongsDialog(tk.Toplevel):
         self.refresh_missing_songs()
 
 
-class BeatmapBrowserDialog(tk.Toplevel):
-    def __init__(self, parent: tk.Misc, on_add_songs: Callable[[list[SongEntry]], tuple[int, int]] | None = None):
+class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
+    def __init__(
+        self,
+        parent: tk.Misc,
+        on_add_songs: Callable[[list[SongEntry]], tuple[int, int]] | None = None,
+        existing_songs: list[SongEntry] | None = None,
+    ):
         super().__init__(parent)
         self.title("List Browser")
+        apply_app_window_icon(self)
         self.geometry("1100x620")
         self.minsize(920, 520)
         self.result: list[SongEntry] = []
         self.on_add_songs = on_add_songs
+        self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(existing_songs or [])
 
         self.filter_var = tk.StringVar(value="")
+        self.duration_filter_mode = tk.StringVar(value="Any")
+        self.duration_filter_value = tk.StringVar(value="")
+        self.duration_filter_value_max = tk.StringVar(value="")
         self.status_var = tk.StringVar(value="Loading beatmaps...")
         self.page_info_var = tk.StringVar(value="Loading full beatmap list...")
         self.selection_var = tk.StringVar(value="Selected: 0")
@@ -2987,6 +3226,10 @@ class BeatmapBrowserDialog(tk.Toplevel):
         self.sync_latest_rows()
 
     def _build_ui(self) -> None:
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            self._build_ctk_ui()
+            return
+
         root = ttk.Frame(self, padding=10)
         root.pack(fill="both", expand=True)
 
@@ -2997,6 +3240,23 @@ class BeatmapBrowserDialog(tk.Toplevel):
         filter_entry = ttk.Entry(controls, textvariable=self.filter_var, width=28)
         filter_entry.pack(side="left", fill="x", expand=True)
         filter_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
+        ttk.Label(controls, text="Duration").pack(side="left", padx=(10, 6))
+        duration_mode_combo = ttk.Combobox(
+            controls,
+            textvariable=self.duration_filter_mode,
+            values=["Any", "Over", "Under", "Between"],
+            state="readonly",
+            width=8,
+        )
+        duration_mode_combo.pack(side="left")
+        duration_mode_combo.bind("<<ComboboxSelected>>", lambda _event: self.refresh_table())
+        duration_min_entry = ttk.Entry(controls, textvariable=self.duration_filter_value, width=8)
+        duration_min_entry.pack(side="left", padx=(6, 0))
+        ttk.Label(controls, text="to").pack(side="left", padx=(6, 6))
+        duration_max_entry = ttk.Entry(controls, textvariable=self.duration_filter_value_max, width=8)
+        duration_max_entry.pack(side="left")
+        duration_min_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
+        duration_max_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
 
         ttk.Button(controls, text="Refresh New", command=self.sync_latest_rows).pack(side="left", padx=(10, 0))
         ttk.Button(controls, text="Full Refresh", command=self.load_all_rows).pack(side="left", padx=(6, 0))
@@ -3015,9 +3275,179 @@ class BeatmapBrowserDialog(tk.Toplevel):
         table_frame = ttk.Frame(root)
         table_frame.pack(fill="both", expand=True)
 
-        columns = ("uploaded", "title", "artist", "mapper", "duration", "difficulties", "downloads")
-        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="extended")
+        self._build_table(table_frame)
+
+        footer = ttk.Frame(root)
+        footer.pack(fill="x", pady=(8, 0))
+        ttk.Button(footer, text="Close", command=self.destroy).pack(side="right")
+
+    def _build_ctk_ui(self) -> None:
+        assert ctk is not None
+
+        palette = self._dialog_palette()
+        try:
+            self.configure(fg_color=palette["bg"])
+        except Exception:
+            pass
+
+        root = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        root.pack(fill="both", expand=True, padx=8, pady=8)
+
+        controls = ctk.CTkFrame(root, corner_radius=8)
+        controls.pack(fill="x", pady=(0, 6))
+        controls.grid_columnconfigure(0, weight=1)
+        controls.grid_columnconfigure(1, weight=0)
+
+        filter_group = ctk.CTkFrame(controls, fg_color="transparent")
+        filter_group.grid(row=0, column=0, padx=10, pady=(8, 4), sticky="we")
+        filter_group.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(filter_group, text="Filter").grid(row=0, column=0, padx=(0, 6), sticky="w")
+        filter_entry = ctk.CTkEntry(filter_group, textvariable=self.filter_var, height=30)
+        filter_entry.grid(row=0, column=1, padx=(0, 12), sticky="we")
+        filter_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
+
+        ctk.CTkLabel(filter_group, text="Duration").grid(row=0, column=2, padx=(0, 6), sticky="w")
+        ctk.CTkComboBox(
+            filter_group,
+            variable=self.duration_filter_mode,
+            values=["Any", "Over", "Under", "Between"],
+            width=104,
+            height=30,
+            command=lambda _choice: self.refresh_table(),
+        ).grid(row=0, column=3, padx=(0, 6), sticky="w")
+        duration_min_entry = ctk.CTkEntry(filter_group, textvariable=self.duration_filter_value, width=84, height=30)
+        duration_min_entry.grid(row=0, column=4, padx=(0, 4), sticky="w")
+        ctk.CTkLabel(filter_group, text="to").grid(row=0, column=5, padx=(2, 6), sticky="w")
+        duration_max_entry = ctk.CTkEntry(filter_group, textvariable=self.duration_filter_value_max, width=84, height=30)
+        duration_max_entry.grid(row=0, column=6, sticky="w")
+        duration_min_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
+        duration_max_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
+
+        selection_chip = ctk.CTkLabel(
+            controls,
+            textvariable=self.selection_var,
+            corner_radius=8,
+            fg_color=palette["surface_alt"],
+            width=112,
+        )
+        selection_chip.grid(row=0, column=1, padx=(0, 10), pady=(8, 4), sticky="e")
+
+        action_bar = ctk.CTkFrame(controls, fg_color="transparent")
+        action_bar.grid(row=1, column=0, columnspan=2, padx=10, pady=(3, 9), sticky="we")
+        action_bar.grid_columnconfigure(1, weight=1)
+
+        data_actions = ctk.CTkFrame(action_bar, fg_color="transparent")
+        data_actions.grid(row=0, column=0, sticky="w")
+        secondary_btn = {
+            "height": 30,
+            "corner_radius": 8,
+            "fg_color": "transparent",
+            "border_width": 1,
+            "border_color": palette["border"],
+            "text_color": palette["fg"],
+            "hover_color": palette["surface_alt"],
+        }
+        ctk.CTkButton(data_actions, text="Refresh New", width=118, command=self.sync_latest_rows, **secondary_btn).pack(side="left")
+        ctk.CTkButton(data_actions, text="Full Refresh", width=116, command=self.load_all_rows, **secondary_btn).pack(side="left", padx=(6, 0))
+
+        playlist_actions = ctk.CTkFrame(action_bar, fg_color="transparent")
+        playlist_actions.grid(row=0, column=1, sticky="e")
+        ctk.CTkButton(playlist_actions, text="Select All", width=96, command=self.select_all_visible, **secondary_btn).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(playlist_actions, text="Clear Selection", width=126, command=self.clear_selection, **secondary_btn).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(playlist_actions, text="Add Selected", width=118, height=30, command=self.on_add_selected).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(playlist_actions, text="Open Website", width=120, command=self.open_selected_website, **secondary_btn).pack(side="left")
+
+        info = ctk.CTkFrame(root, corner_radius=8)
+        info.pack(fill="x", pady=(0, 6))
+        info.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(info, textvariable=self.page_info_var).grid(row=0, column=0, padx=(10, 12), pady=7, sticky="w")
+        ctk.CTkLabel(info, textvariable=self.status_var, anchor="w").grid(row=0, column=1, padx=(0, 10), pady=7, sticky="we")
+
+        table_frame = ctk.CTkFrame(root, corner_radius=8)
+        table_frame.pack(fill="both", expand=True)
+        self._build_table(table_frame, padx=10, pady=10)
+
+        footer = ctk.CTkFrame(root, corner_radius=8)
+        footer.pack(fill="x", pady=(6, 0))
+        ctk.CTkButton(footer, text="Close", width=104, height=30, command=self.destroy).pack(side="right", padx=10, pady=7)
+
+    def _dialog_palette(self) -> dict[str, str]:
+        mode = "light"
+        try:
+            parent = self.master
+            if parent is not None and hasattr(parent, "theme_mode_var"):
+                mode = parent.theme_mode_var.get()
+        except Exception:
+            pass
+        return THEME_PRESETS.get(mode, THEME_PRESETS["light"])
+
+    def _configure_browser_tree_style(self) -> None:
+        palette = self._dialog_palette()
+        style = ttk.Style(self)
+        try:
+            style.layout("Browser.Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
+        except tk.TclError:
+            pass
+        style.configure(
+            "Browser.Treeview",
+            background=palette["table_even"],
+            fieldbackground=palette["table_even"],
+            foreground=palette["fg"],
+            bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            borderwidth=0,
+            relief="flat",
+            rowheight=28,
+            font=("Segoe UI", 10),
+        )
+        style.map(
+            "Browser.Treeview",
+            background=[("selected", palette["select_bg"])],
+            foreground=[("selected", palette["select_fg"])],
+        )
+        style.configure(
+            "Browser.Treeview.Heading",
+            background=palette["table_heading"],
+            foreground=palette["fg"],
+            bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            borderwidth=0,
+            relief="flat",
+            padding=(9, 5),
+            font=("Segoe UI Semibold", 10),
+        )
+        style.map(
+            "Browser.Treeview.Heading",
+            background=[("active", palette["surface_alt"])],
+            foreground=[("active", palette["fg"])],
+        )
+
+    def _configure_browser_tree_tags(self) -> None:
+        if not hasattr(self, "tree"):
+            return
+        palette = self._dialog_palette()
+        try:
+            self.tree.tag_configure("browser_even_row", background=palette["table_even"], foreground=palette["fg"])
+            self.tree.tag_configure("browser_odd_row", background=palette["table_odd"], foreground=palette["fg"])
+            self.tree.tag_configure("browser_existing_row", background="#251E3F", foreground=palette["fg"])
+        except tk.TclError:
+            pass
+
+    def row_is_in_current_playlist(self, row: BeatmapListEntry) -> bool:
+        row_hash = song_hash_from_record(row.record)
+        if row_hash and row_hash in self.existing_hashes:
+            return True
+        return bool(row.beatmap_id and row.beatmap_id in self.existing_beatmap_ids)
+
+    def _build_table(self, table_frame: tk.Misc, padx: int = 0, pady: int = 0) -> None:
+        self._configure_browser_tree_style()
+        palette = self._dialog_palette()
+        columns = ("playlist", "uploaded", "title", "artist", "mapper", "duration", "difficulties", "downloads")
+        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="extended", style="Browser.Treeview")
         headings = {
+            "playlist": "Playlist",
             "uploaded": "Uploaded",
             "title": "Title",
             "artist": "Artist",
@@ -3027,6 +3457,7 @@ class BeatmapBrowserDialog(tk.Toplevel):
             "downloads": "Downloads",
         }
         widths = {
+            "playlist": 90,
             "uploaded": 135,
             "title": 250,
             "artist": 180,
@@ -3040,10 +3471,21 @@ class BeatmapBrowserDialog(tk.Toplevel):
             anchor = "e" if col == "downloads" else "w"
             self.tree.column(col, width=widths[col], anchor=anchor)
 
-        yscroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            yscroll = ctk.CTkScrollbar(
+                table_frame,
+                orientation="vertical",
+                command=self.tree.yview,
+                width=13,
+                fg_color="transparent",
+                button_color=palette["surface_alt"],
+                button_hover_color=palette["accent"],
+            )
+        else:
+            yscroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=yscroll.set)
-        yscroll.pack(side="right", fill="y")
-        self.tree.pack(side="left", fill="both", expand=True)
+        yscroll.pack(side="right", fill="y", padx=(0, padx), pady=pady)
+        self.tree.pack(side="left", fill="both", expand=True, padx=(padx, 0), pady=pady)
         self.tree.bind("<Double-1>", lambda _event: self.on_add_selected())
         self.tree.bind("<Button-3>", self.on_tree_right_click)
         self.tree.bind("<<TreeviewSelect>>", lambda _event: self.update_selection_status())
@@ -3054,10 +3496,7 @@ class BeatmapBrowserDialog(tk.Toplevel):
         self.context_menu = tk.Menu(self, tearoff=0)
         self.context_menu.add_command(label="Add to Playlist", command=self.on_add_selected)
         self.context_menu.add_command(label="Search on YouTube", command=self.search_selected_on_youtube)
-
-        footer = ttk.Frame(root)
-        footer.pack(fill="x", pady=(8, 0))
-        ttk.Button(footer, text="Close", command=self.destroy).pack(side="right")
+        self._configure_browser_tree_tags()
 
     def set_loading_state(self, is_loading: bool, message: str) -> None:
         self.loading = is_loading
@@ -3188,21 +3627,37 @@ class BeatmapBrowserDialog(tk.Toplevel):
         needle = normalize_text(self.filter_var.get())
         rows = []
         self.tree.delete(*self.tree.get_children())
+        duration_mode = self.duration_filter_mode.get()
+        duration_min = self.parse_duration_filter(self.duration_filter_value.get())
+        duration_max = self.parse_duration_filter(self.duration_filter_value_max.get())
 
         for row in self._rows:
             haystack = normalize_text(" ".join([row.title, row.artist, row.mapper, row.difficulty_text]))
             if needle and needle not in haystack:
                 continue
+            if duration_mode in {"Over", "Under"} and duration_min is not None:
+                if duration_mode == "Over" and not (row.duration_sort > duration_min):
+                    continue
+                if duration_mode == "Under" and not (row.duration_sort < duration_min):
+                    continue
+            elif duration_mode == "Between" and duration_min is not None and duration_max is not None:
+                low = min(duration_min, duration_max)
+                high = max(duration_min, duration_max)
+                if not (low <= row.duration_sort <= high):
+                    continue
             rows.append(row)
 
         self._visible_rows = sorted(rows, key=self.sort_key, reverse=self.sort_desc)
 
         for visible_index, row in enumerate(self._visible_rows):
+            in_playlist = self.row_is_in_current_playlist(row)
             self.tree.insert(
                 "",
                 "end",
                 iid=str(visible_index),
+                tags=("browser_existing_row" if in_playlist else ("browser_even_row" if visible_index % 2 == 0 else "browser_odd_row"),),
                 values=(
+                    "In list" if in_playlist else "",
                     row.uploaded_text,
                     row.title,
                     row.artist,
@@ -3225,6 +3680,8 @@ class BeatmapBrowserDialog(tk.Toplevel):
     def sort_key(self, row: BeatmapListEntry):
         if self.sort_column == "uploaded":
             return row.uploaded_sort
+        if self.sort_column == "playlist":
+            return int(self.row_is_in_current_playlist(row))
         if self.sort_column == "title":
             return row.title.lower()
         if self.sort_column == "artist":
@@ -3238,6 +3695,24 @@ class BeatmapBrowserDialog(tk.Toplevel):
         if self.sort_column == "downloads":
             return row.download_count
         return row.uploaded_sort
+
+    def parse_duration_filter(self, text: str) -> float | None:
+        value = text.strip()
+        if not value:
+            return None
+        if ":" in value:
+            parts = value.split(":")
+            try:
+                if len(parts) == 2:
+                    return float(int(parts[0]) * 60 + int(parts[1]))
+                if len(parts) == 3:
+                    return float(int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2]))
+            except ValueError:
+                return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
 
     def on_column_click(self, column: str) -> None:
         if self.sort_column != column:
@@ -3307,6 +3782,13 @@ class BeatmapBrowserDialog(tk.Toplevel):
         songs = [parse_song_from_record(row.record, row.beatmap_id) for row in rows]
         if self.on_add_songs is not None:
             added, skipped = self.on_add_songs(songs)
+            if added:
+                for song in songs:
+                    if song.hash.strip():
+                        self.existing_hashes.add(song.hash.strip().lower())
+                    if song.beatmapId.strip():
+                        self.existing_beatmap_ids.add(song.beatmapId.strip())
+                self.refresh_table()
             if added == 0:
                 self.set_status_message(f"No songs added. Skipped duplicates: {skipped}.")
             elif skipped:
@@ -3318,16 +3800,23 @@ class BeatmapBrowserDialog(tk.Toplevel):
         self.destroy()
 
 
-class VisualBeatmapBrowserDialog(tk.Toplevel):
+class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
     COVER_BOX_SIZE = 180
 
-    def __init__(self, parent: tk.Misc, on_add_song: Callable[[SongEntry], bool] | None = None):
+    def __init__(
+        self,
+        parent: tk.Misc,
+        on_add_song: Callable[[SongEntry], bool] | None = None,
+        existing_songs: list[SongEntry] | None = None,
+    ):
         super().__init__(parent)
         self.title("Visual Beatmap Browser")
+        apply_app_window_icon(self)
         self.geometry("1180x760")
         self.minsize(980, 620)
         self.result: list[SongEntry] = []
         self.on_add_song = on_add_song
+        self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(existing_songs or [])
 
         self.page_var = tk.StringVar(value="1")
         self.page_info_var = tk.StringVar(value="Loading...")
@@ -3339,13 +3828,16 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
         self.loading = False
         self._rows: list[BeatmapListEntry] = []
         self._image_refs: dict[str, Any] = {}
-
         self._build_ui()
         self.transient(parent)
         self.grab_set()
         self.load_latest_page()
 
     def _build_ui(self) -> None:
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            self._build_ctk_ui()
+            return
+
         root = ttk.Frame(self, padding=10)
         root.pack(fill="both", expand=True)
 
@@ -3383,6 +3875,82 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
         footer = ttk.Frame(root)
         footer.pack(fill="x", pady=(8, 0))
         ttk.Button(footer, text="Close", command=self.destroy).pack(side="right")
+
+    def _build_ctk_ui(self) -> None:
+        assert ctk is not None
+
+        root = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        root.pack(fill="both", expand=True, padx=8, pady=8)
+
+        controls = ctk.CTkFrame(root, corner_radius=8)
+        controls.pack(fill="x", pady=(0, 6))
+        controls.grid_columnconfigure(3, weight=1)
+
+        nav_group = ctk.CTkFrame(controls, fg_color="transparent")
+        nav_group.grid(row=0, column=0, padx=(10, 6), pady=7, sticky="w")
+        ctk.CTkLabel(nav_group, text="Page").pack(side="left", padx=(0, 5))
+        page_entry = ctk.CTkEntry(nav_group, textvariable=self.page_var, width=64, height=28)
+        page_entry.pack(side="left", padx=(0, 5))
+        page_entry.bind("<Return>", lambda _event: self.go_to_page())
+        ctk.CTkButton(nav_group, text="Go", width=48, height=28, command=self.go_to_page).pack(side="left")
+
+        page_group = ctk.CTkFrame(controls, fg_color="transparent")
+        page_group.grid(row=0, column=1, padx=6, pady=7, sticky="w")
+        ctk.CTkButton(page_group, text="< Previous", width=104, height=28, command=lambda: self.load_page(self.current_page - 1)).pack(
+            side="left", padx=(0, 5)
+        )
+        ctk.CTkButton(page_group, text="Next >", width=84, height=28, command=lambda: self.load_page(self.current_page + 1)).pack(
+            side="left"
+        )
+
+        refresh_group = ctk.CTkFrame(controls, fg_color="transparent")
+        refresh_group.grid(row=0, column=2, padx=6, pady=7, sticky="w")
+        ctk.CTkButton(refresh_group, text="Full Refresh", width=116, height=28, command=self.load_latest_page).pack(side="left")
+
+        status_group = ctk.CTkFrame(controls, fg_color="transparent")
+        status_group.grid(row=0, column=3, padx=(8, 10), pady=7, sticky="e")
+        ctk.CTkLabel(status_group, textvariable=self.page_info_var).pack(side="left", padx=(0, 14))
+        ctk.CTkLabel(status_group, textvariable=self.status_var).pack(side="left")
+
+        content = ctk.CTkFrame(root, corner_radius=8)
+        content.pack(fill="both", expand=True)
+        content.grid_columnconfigure(0, weight=1)
+        content.grid_rowconfigure(0, weight=1)
+
+        self.canvas = tk.Canvas(content, highlightthickness=0, bg=self._visual_canvas_bg())
+        palette = THEME_PRESETS["dark"]
+        self.vscroll = ctk.CTkScrollbar(
+            content,
+            orientation="vertical",
+            command=self.canvas.yview,
+            width=13,
+            fg_color="transparent",
+            button_color=palette["surface_alt"],
+            button_hover_color=palette["accent"],
+        )
+        self.canvas.configure(yscrollcommand=self.vscroll.set)
+        self.canvas.grid(row=0, column=0, sticky="nsew", padx=(10, 0), pady=10)
+        self.vscroll.grid(row=0, column=1, sticky="ns", padx=(0, 10), pady=10)
+
+        self.cards_frame = ctk.CTkFrame(self.canvas, fg_color="transparent")
+        self.cards_window = self.canvas.create_window((0, 0), window=self.cards_frame, anchor="nw")
+        self.cards_frame.bind("<Configure>", self.on_cards_configure)
+        self.canvas.bind("<Configure>", self.on_canvas_configure)
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
+
+        footer = ctk.CTkFrame(root, corner_radius=8)
+        footer.pack(fill="x", pady=(6, 0))
+        ctk.CTkButton(footer, text="Close", width=104, height=30, command=self.destroy).pack(side="right", padx=10, pady=7)
+
+    def _visual_canvas_bg(self) -> str:
+        palette = THEME_PRESETS.get("dark", THEME_PRESETS["dark"])
+        try:
+            parent = self.master
+            if parent is not None and hasattr(parent, "theme_mode_var"):
+                palette = THEME_PRESETS.get(parent.theme_mode_var.get(), palette)
+        except Exception:
+            pass
+        return palette["surface"]
 
     def destroy(self) -> None:
         try:
@@ -3475,11 +4043,19 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
 
         columns = 4
         for idx, row in enumerate(self._rows):
-            card = ttk.Frame(self.cards_frame, padding=8, relief="ridge")
-            card.grid(row=idx // columns, column=idx % columns, padx=8, pady=8, sticky="nsew")
+            if HAS_CUSTOMTKINTER and ctk is not None:
+                card = ctk.CTkFrame(self.cards_frame, corner_radius=8)
+                card.grid(row=idx // columns, column=idx % columns, padx=8, pady=8, sticky="nsew")
+                card_pad_x = 8
+                card_pad_y = 8
+            else:
+                card = ttk.Frame(self.cards_frame, padding=8, relief="ridge")
+                card.grid(row=idx // columns, column=idx % columns, padx=8, pady=8, sticky="nsew")
+                card_pad_x = 0
+                card_pad_y = 0
 
             art_frame = tk.Frame(card, width=self.COVER_BOX_SIZE, height=self.COVER_BOX_SIZE, bg="#202020")
-            art_frame.pack(fill="x")
+            art_frame.pack(fill="x", padx=card_pad_x, pady=(card_pad_y, 0))
             art_frame.pack_propagate(False)
             art_label = tk.Label(
                 art_frame,
@@ -3494,35 +4070,126 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
             if HAS_PILLOW:
                 self.load_card_cover(row, art_label)
 
-            title_label = tk.Label(
-                card,
-                text=row.title or "(Untitled)",
-                font=("Segoe UI", 10, "bold"),
-                anchor="w",
-                justify="left",
-                wraplength=190,
-                padx=0,
-                pady=2,
-            )
-            title_label.pack(fill="x", anchor="w", pady=(8, 2))
-            ttk.Label(card, text=row.artist or "Unknown artist", wraplength=180).pack(anchor="w")
-            ttk.Label(card, text=f"Mapper: {row.mapper or 'Unknown'}", wraplength=180).pack(anchor="w", pady=(2, 0))
-            ttk.Label(card, text=f"Uploaded: {row.uploaded_text or '-'}", wraplength=180).pack(anchor="w")
-            ttk.Label(card, text=f"Duration: {row.duration_text or '-'}").pack(anchor="w")
-            ttk.Label(card, text=f"Downloads: {row.download_count}").pack(anchor="w", pady=(0, 6))
+            if HAS_CUSTOMTKINTER and ctk is not None:
+                ctk.CTkLabel(
+                    card,
+                    text=row.title or "(Untitled)",
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    anchor="w",
+                    justify="left",
+                    wraplength=190,
+                ).pack(fill="x", anchor="w", padx=8, pady=(8, 1))
+                ctk.CTkLabel(card, text=row.artist or "Unknown artist", anchor="w", wraplength=180).pack(fill="x", anchor="w", padx=8)
+                ctk.CTkLabel(card, text=f"Mapper: {row.mapper or 'Unknown'}", anchor="w", wraplength=180).pack(
+                    fill="x", anchor="w", padx=8, pady=(1, 0)
+                )
+            else:
+                title_label = tk.Label(
+                    card,
+                    text=row.title or "(Untitled)",
+                    font=("Segoe UI", 10, "bold"),
+                    anchor="w",
+                    justify="left",
+                    wraplength=190,
+                    padx=0,
+                    pady=2,
+                )
+                title_label.pack(fill="x", anchor="w", pady=(8, 2))
+                ttk.Label(card, text=row.artist or "Unknown artist", wraplength=180).pack(anchor="w")
+                ttk.Label(card, text=f"Mapper: {row.mapper or 'Unknown'}", wraplength=180).pack(anchor="w", pady=(2, 0))
+            self.render_difficulty_badges(card, row)
+            self.render_playlist_status_badge(card, row)
+            if HAS_CUSTOMTKINTER and ctk is not None:
+                ctk.CTkLabel(card, text=f"Uploaded: {row.uploaded_text or '-'}", anchor="w", wraplength=180).pack(fill="x", anchor="w", padx=8)
+                ctk.CTkLabel(card, text=f"Duration: {row.duration_text or '-'}", anchor="w").pack(fill="x", anchor="w", padx=8)
+                ctk.CTkLabel(card, text=f"Downloads: {row.download_count}", anchor="w").pack(fill="x", anchor="w", padx=8, pady=(0, 4))
 
-            buttons = ttk.Frame(card)
-            buttons.pack(fill="x", pady=(4, 0))
-            ttk.Button(buttons, text="Add", command=lambda r=row: self.add_single_row(r)).pack(side="left")
-            ttk.Button(buttons, text="YouTube", command=lambda r=row: self.search_row_on_youtube(r)).pack(
-                side="left", padx=(6, 0)
-            )
-            ttk.Button(buttons, text="Open", command=lambda r=row: self.open_row_website(r)).pack(side="right")
+                buttons = ctk.CTkFrame(card, fg_color="transparent")
+                buttons.pack(fill="x", padx=8, pady=(2, 8))
+                ctk.CTkButton(buttons, text="Add", width=50, height=26, command=lambda r=row: self.add_single_row(r)).pack(side="left")
+                ctk.CTkButton(buttons, text="YouTube", width=76, height=26, command=lambda r=row: self.search_row_on_youtube(r)).pack(
+                    side="left", padx=(5, 0)
+                )
+                ctk.CTkButton(buttons, text="Open", width=58, height=26, command=lambda r=row: self.open_row_website(r)).pack(side="right")
+            else:
+                ttk.Label(card, text=f"Uploaded: {row.uploaded_text or '-'}", wraplength=180).pack(anchor="w")
+                ttk.Label(card, text=f"Duration: {row.duration_text or '-'}").pack(anchor="w")
+                ttk.Label(card, text=f"Downloads: {row.download_count}").pack(anchor="w", pady=(0, 6))
+
+                buttons = ttk.Frame(card)
+                buttons.pack(fill="x", pady=(4, 0))
+                ttk.Button(buttons, text="Add", command=lambda r=row: self.add_single_row(r)).pack(side="left")
+                ttk.Button(buttons, text="YouTube", command=lambda r=row: self.search_row_on_youtube(r)).pack(
+                    side="left", padx=(6, 0)
+                )
+                ttk.Button(buttons, text="Open", command=lambda r=row: self.open_row_website(r)).pack(side="right")
 
         for col in range(columns):
             self.cards_frame.columnconfigure(col, weight=1)
         self.canvas.yview_moveto(0.0)
         self.on_cards_configure()
+
+    def render_difficulty_badges(self, parent: tk.Widget, row: BeatmapListEntry) -> None:
+        labels = normalized_difficulty_labels(row.difficulty_text)
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            badge_frame = ctk.CTkFrame(parent, fg_color="transparent")
+            badge_frame.pack(fill="x", anchor="w", padx=8, pady=(5, 4))
+        else:
+            try:
+                parent_bg = parent.cget("background")
+            except tk.TclError:
+                parent_bg = ""
+            badge_frame = tk.Frame(parent, bg=parent_bg) if parent_bg else tk.Frame(parent)
+            badge_frame.pack(fill="x", anchor="w", pady=(5, 4))
+        if not labels:
+            labels = ["Unknown"]
+        for idx, label in enumerate(labels):
+            bg, fg = DIFFICULTY_BADGE_COLORS.get(label, ("#5B6472", "#FFFFFF"))
+            badge = tk.Label(
+                badge_frame,
+                text=DIFFICULTY_BADGE_INITIALS.get(label, label[:1].upper() or "?"),
+                bg=bg,
+                fg=fg,
+                font=("Segoe UI", 8, "bold"),
+                width=2,
+                padx=2,
+                pady=1,
+                relief="flat",
+            )
+            badge.grid(row=0, column=idx, padx=(0, 3), pady=(0, 2), sticky="w")
+
+    def row_is_in_current_playlist(self, row: BeatmapListEntry) -> bool:
+        row_hash = song_hash_from_record(row.record)
+        if row_hash and row_hash in self.existing_hashes:
+            return True
+        return bool(row.beatmap_id and row.beatmap_id in self.existing_beatmap_ids)
+
+    def render_playlist_status_badge(self, parent: tk.Widget, row: BeatmapListEntry) -> None:
+        if not self.row_is_in_current_playlist(row):
+            return
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            badge = ctk.CTkLabel(
+                parent,
+                text="In current playlist",
+                fg_color="#251E3F",
+                text_color="#FFFFFF",
+                corner_radius=7,
+                height=22,
+                anchor="w",
+            )
+            badge.pack(fill="x", anchor="w", padx=8, pady=(0, 5))
+        else:
+            badge = tk.Label(
+                parent,
+                text="In current playlist",
+                bg="#251E3F",
+                fg="#FFFFFF",
+                font=("Segoe UI", 8, "bold"),
+                padx=5,
+                pady=2,
+                anchor="w",
+            )
+            badge.pack(fill="x", anchor="w", pady=(0, 5))
 
     def load_card_cover(self, row: BeatmapListEntry, label: tk.Label) -> None:
         def worker() -> None:
@@ -3568,6 +4235,12 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
         song = parse_song_from_record(row.record, row.beatmap_id)
         if self.on_add_song is not None:
             added = self.on_add_song(song)
+            if added:
+                if song.hash.strip():
+                    self.existing_hashes.add(song.hash.strip().lower())
+                if song.beatmapId.strip():
+                    self.existing_beatmap_ids.add(song.beatmapId.strip())
+                self.render_cards()
             self.status_var.set("Added to playlist." if added else "Song already in playlist.")
             return
         self.result = [song]
@@ -3584,8 +4257,14 @@ class VisualBeatmapBrowserDialog(tk.Toplevel):
 class PlaylistEditorApp(BASE_TK_CLASS):
     def __init__(self, instance_guard: SingleInstanceGuard | None = None) -> None:
         super().__init__()
+        if HAS_CUSTOMTKINTER and HAS_DND_SUPPORT and TkinterDnD is not None:
+            try:
+                self.TkdndVersion = TkinterDnD._require(self)
+            except Exception:
+                pass
         self.instance_guard = instance_guard
         self.title("SR Playlist Forge v.2.2")
+        apply_app_window_icon(self)
         self.geometry("1220x700")
         self.minsize(1120, 620)
 
@@ -3608,7 +4287,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.download_status_var = tk.StringVar(value="Idle")
         self.download_percent_var = tk.StringVar(value="0%")
         self.download_progress_var = tk.DoubleVar(value=0.0)
-        self.theme_mode_var = tk.StringVar(value="light")
+        self.theme_mode_var = tk.StringVar(value="dark")
         self.theme_button_var = tk.StringVar(value="")
         self.quest_song_dir_var = tk.StringVar(value="/sdcard/SynthRidersUC/CustomSongs")
         self.quest_playlist_dir_var = tk.StringVar(value="/sdcard/Android/data/com.kluge.SynthRiders/files/Playlist")
@@ -3646,6 +4325,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             var.trace_add("write", lambda *_: self.schedule_session_save())
         self.duration_filter_mode = tk.StringVar(value="Any")
         self.duration_filter_value = tk.StringVar(value="")
+        self.duration_filter_value_max = tk.StringVar(value="")
         self.difficulty_filter_choice = tk.StringVar(value="Any")
         self.update_generated_filename()
 
@@ -3677,6 +4357,10 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             )
 
     def _build_ui(self) -> None:
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            self._build_ctk_ui()
+            return
+
         root = ttk.Frame(self, padding=8)
         root.pack(fill="both", expand=True)
 
@@ -3684,12 +4368,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         top_bar.pack(fill="x", pady=(0, 8))
         ttk.Label(top_bar, text="SR Playlist Forge v.2.2", style="Title.TLabel").pack(side="left")
         ttk.Label(top_bar, textvariable=self.stats_var).pack(side="left", padx=(12, 0))
-        ttk.Checkbutton(
-            top_bar,
-            textvariable=self.theme_button_var,
-            command=self.toggle_theme,
-            style="ThemeSwitch.TCheckbutton",
-        ).pack(side="right")
 
         controls = ttk.Notebook(root)
         controls.pack(fill="x", pady=(0, 8))
@@ -3815,26 +4493,28 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         ttk.Combobox(
             filter_frame,
             textvariable=self.duration_filter_mode,
-            values=["Any", "Over", "Under"],
+            values=["Any", "Over", "Under", "Between"],
             state="readonly",
             width=8,
         ).grid(row=0, column=1, padx=6, pady=6)
         ttk.Entry(filter_frame, textvariable=self.duration_filter_value, width=10).grid(row=0, column=2, padx=6, pady=6)
-        ttk.Label(filter_frame, text="(seconds or MM:SS)").grid(row=0, column=3, padx=6, pady=6, sticky="w")
+        ttk.Label(filter_frame, text="to").grid(row=0, column=3, padx=6, pady=6, sticky="w")
+        ttk.Entry(filter_frame, textvariable=self.duration_filter_value_max, width=10).grid(row=0, column=4, padx=6, pady=6)
+        ttk.Label(filter_frame, text="(seconds or MM:SS)").grid(row=0, column=5, padx=6, pady=6, sticky="w")
 
-        ttk.Label(filter_frame, text="Difficulty").grid(row=0, column=4, padx=(18, 6), pady=6, sticky="w")
+        ttk.Label(filter_frame, text="Difficulty").grid(row=0, column=6, padx=(18, 6), pady=6, sticky="w")
         ttk.Combobox(
             filter_frame,
             textvariable=self.difficulty_filter_choice,
             values=["Any", "Easy", "Normal", "Hard", "Expert", "Master"],
             state="readonly",
             width=10,
-        ).grid(row=0, column=5, padx=6, pady=6)
+        ).grid(row=0, column=7, padx=6, pady=6)
 
-        ttk.Button(filter_frame, text="Apply", command=self.apply_filters).grid(row=0, column=7, padx=10, pady=6)
-        ttk.Button(filter_frame, text="Clear", command=self.clear_filters).grid(row=0, column=8, padx=6, pady=6)
+        ttk.Button(filter_frame, text="Apply", command=self.apply_filters).grid(row=0, column=9, padx=10, pady=6)
+        ttk.Button(filter_frame, text="Clear", command=self.clear_filters).grid(row=0, column=10, padx=6, pady=6)
         ttk.Button(filter_frame, text="Refresh Difficulties", command=self.refresh_difficulty_labels).grid(
-            row=0, column=9, padx=(12, 6), pady=6
+            row=0, column=11, padx=(12, 6), pady=6
         )
 
         content = ttk.Panedwindow(root, orient="horizontal")
@@ -3942,6 +4622,313 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         quest_frame.columnconfigure(4, weight=1)
         quest_frame.columnconfigure(7, weight=1)
 
+    def _build_ctk_ui(self) -> None:
+        assert ctk is not None
+
+        root = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        root.pack(fill="both", expand=True, padx=8, pady=8)
+
+        top_bar = ctk.CTkFrame(root, corner_radius=8)
+        top_bar.pack(fill="x", pady=(0, 6))
+        top_bar.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(top_bar, text="SR Playlist Forge v.2.2", font=ctk.CTkFont(size=16, weight="bold")).grid(
+            row=0, column=0, padx=(12, 10), pady=6, sticky="w"
+        )
+        ctk.CTkLabel(top_bar, textvariable=self.stats_var).grid(row=0, column=1, padx=(0, 10), pady=6, sticky="w")
+
+        controls = ctk.CTkTabview(root, corner_radius=8)
+        controls.pack(fill="x", pady=(0, 6))
+        meta = controls.add("Playlist")
+        add_tab = controls.add("Add Songs")
+        quest_tab = controls.add("Quest")
+
+        meta.grid_columnconfigure(1, weight=1)
+        meta.grid_columnconfigure(3, weight=1)
+        fields = [
+            ("namePlaylist", "namePlaylist", ""),
+            ("description", "description", ""),
+            (
+                "Playlist Number",
+                "playlistNumber",
+                "Filename is auto-generated as 000007__namePlaylist.playlist.\n"
+                "Enter any number and the app pads it to 6 digits.",
+            ),
+            (
+                "creationDate (local)",
+                "creationDateHuman",
+                "Shown as readable local date/time.\n"
+                "Supported formats: YYYY-MM-DD HH:MM[:SS] or YYYY-MM-DD.",
+            ),
+            ("SelectedIconIndex", "SelectedIconIndex", ""),
+            ("SelectedTexture", "SelectedTexture", ""),
+            ("gradientTop", "gradientTop", ""),
+            ("gradientDown", "gradientDown", ""),
+            ("colorTexture", "colorTexture", ""),
+            ("colorTitle", "colorTitle", ""),
+        ]
+        field_positions = {
+            "namePlaylist": (0, 0),
+            "description": (1, 0),
+            "playlistNumber": (2, 0),
+            "creationDateHuman": (3, 0),
+            "SelectedIconIndex": (4, 0),
+            "SelectedTexture": (0, 2),
+            "gradientTop": (1, 2),
+            "gradientDown": (2, 2),
+            "colorTexture": (3, 2),
+            "colorTitle": (4, 2),
+        }
+        for i, (label, key, tip) in enumerate(fields):
+            row, label_col = field_positions.get(key, (i, 0))
+            ctk.CTkLabel(meta, text=label).grid(row=row, column=label_col, padx=6, pady=3, sticky="e")
+            col = label_col + 1
+            if key in {"gradientTop", "gradientDown", "colorTitle", "colorTexture"}:
+                self._build_ctk_color_picker_field(meta, key, row, col)
+                continue
+            if tip:
+                cell = ctk.CTkFrame(meta, fg_color="transparent")
+                cell.grid(row=row, column=col, padx=6, pady=3, sticky="we")
+                cell.grid_columnconfigure(0, weight=1)
+                ctk.CTkEntry(cell, textvariable=self.playlist_vars[key], width=220).grid(row=0, column=0, sticky="we")
+                if key == "creationDateHuman":
+                    ctk.CTkButton(cell, text="Now", width=64, height=26, command=self.set_creation_date_to_now).grid(
+                        row=0, column=1, padx=(6, 0), sticky="w"
+                    )
+                    info_col = 2
+                else:
+                    info_col = 1
+                info_label = ctk.CTkLabel(cell, text="i", width=24)
+                info_label.grid(row=0, column=info_col, padx=(6, 0), sticky="w")
+                self._tooltips.append(HoverTooltip(info_label, tip))
+            else:
+                ctk.CTkEntry(meta, textvariable=self.playlist_vars[key], width=280).grid(
+                    row=row, column=col, padx=6, pady=3, sticky="we"
+                )
+
+        playlist_actions = ctk.CTkFrame(meta, fg_color="transparent")
+        playlist_actions.grid(row=5, column=0, columnspan=4, sticky="we", pady=(6, 0), padx=4)
+        playlist_actions.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(playlist_actions, text="Export filename:").grid(row=0, column=0, padx=(4, 6), pady=4, sticky="w")
+        ctk.CTkLabel(playlist_actions, textvariable=self.generated_filename_var).grid(row=0, column=1, padx=(0, 10), pady=4, sticky="w")
+        ctk.CTkButton(playlist_actions, text="Export .playlist", width=126, height=28, command=self.export_playlist).grid(
+            row=0, column=2, padx=4, pady=4
+        )
+        ctk.CTkButton(playlist_actions, text="Add .playlist", width=126, height=28, command=self.add_playlist).grid(
+            row=0, column=3, padx=4, pady=4
+        )
+        ctk.CTkButton(playlist_actions, text="Randomize Look", width=144, height=28, command=self.randomize_playlist_look).grid(
+            row=0, column=4, padx=(4, 0), pady=4
+        )
+
+        add_tab.grid_columnconfigure(1, weight=1)
+        self.url_var = tk.StringVar()
+        ctk.CTkLabel(add_tab, text="Beatmap URL").grid(row=0, column=0, padx=6, pady=6, sticky="w")
+        ctk.CTkEntry(add_tab, textvariable=self.url_var, width=420).grid(row=0, column=1, padx=6, pady=6, sticky="we")
+        ctk.CTkButton(add_tab, text="Add from URL", width=126, height=28, command=self.add_song_from_url).grid(
+            row=0, column=2, padx=6, pady=6
+        )
+        quick_actions = ctk.CTkFrame(add_tab, fg_color="transparent")
+        quick_actions.grid(row=1, column=0, columnspan=3, sticky="w", padx=6, pady=(0, 6))
+        ctk.CTkButton(quick_actions, text="Add Empty Song", width=136, height=28, command=self.add_empty_song).pack(side="left", padx=(0, 5))
+        ctk.CTkButton(quick_actions, text="Add .synth Files", width=136, height=28, command=self.add_synth_files_dialog).pack(side="left", padx=5)
+        ctk.CTkButton(quick_actions, text="List Browser", width=124, height=28, command=self.open_beatmap_browser).pack(side="left", padx=5)
+        ctk.CTkButton(quick_actions, text="Visual Browser", width=124, height=28, command=self.open_visual_browser).pack(side="left", padx=5)
+
+        drop_hint = "Drop .synth files here"
+        if not HAS_DND_SUPPORT:
+            drop_hint += " | Install tkinterdnd2 for drag-and-drop support"
+        self.drop_zone = ctk.CTkLabel(
+            add_tab,
+            text=drop_hint,
+            anchor="center",
+            corner_radius=8,
+            fg_color=("gray88", "gray20"),
+            height=34,
+        )
+        self.drop_zone.grid(row=2, column=0, columnspan=3, sticky="we", padx=6, pady=(0, 6))
+        if HAS_DND_SUPPORT and DND_FILES is not None:
+            self.drop_zone.drop_target_register(DND_FILES)
+            self.drop_zone.dnd_bind("<<Drop>>", self.on_drop_synth_files)
+
+        filter_frame = ctk.CTkFrame(root, corner_radius=8)
+        filter_frame.pack(fill="x", pady=(0, 6))
+        ctk.CTkLabel(filter_frame, text="Temporary Filters", font=ctk.CTkFont(weight="bold")).grid(
+            row=0, column=0, padx=(10, 6), pady=5, sticky="w"
+        )
+        ctk.CTkLabel(filter_frame, text="Duration").grid(row=0, column=1, padx=(6, 4), pady=5, sticky="w")
+        ctk.CTkComboBox(
+            filter_frame,
+            variable=self.duration_filter_mode,
+            values=["Any", "Over", "Under", "Between"],
+            width=95,
+        ).grid(row=0, column=2, padx=3, pady=5)
+        ctk.CTkEntry(filter_frame, textvariable=self.duration_filter_value, width=84).grid(row=0, column=3, padx=3, pady=5)
+        ctk.CTkLabel(filter_frame, text="to").grid(row=0, column=4, padx=3, pady=5, sticky="w")
+        ctk.CTkEntry(filter_frame, textvariable=self.duration_filter_value_max, width=84).grid(row=0, column=5, padx=3, pady=5)
+        ctk.CTkLabel(filter_frame, text="Difficulty").grid(row=0, column=6, padx=(14, 4), pady=5, sticky="w")
+        ctk.CTkComboBox(
+            filter_frame,
+            variable=self.difficulty_filter_choice,
+            values=["Any", "Easy", "Normal", "Hard", "Expert", "Master"],
+            width=110,
+        ).grid(row=0, column=7, padx=3, pady=5)
+        ctk.CTkButton(filter_frame, text="Apply", width=78, height=28, command=self.apply_filters).grid(row=0, column=8, padx=(10, 3), pady=5)
+        ctk.CTkButton(filter_frame, text="Clear", width=78, height=28, command=self.clear_filters).grid(row=0, column=9, padx=3, pady=5)
+        ctk.CTkButton(filter_frame, text="Refresh Difficulties", width=144, height=28, command=self.refresh_difficulty_labels).grid(
+            row=0, column=10, padx=(6, 10), pady=5
+        )
+
+        content = ctk.CTkFrame(root, fg_color="transparent")
+        content.pack(fill="both", expand=True)
+        content.grid_columnconfigure(0, weight=1)
+        content.grid_rowconfigure(0, weight=1)
+
+        table_frame = ctk.CTkFrame(content, corner_radius=8)
+        table_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        table_frame.grid_columnconfigure(0, weight=1)
+        table_frame.grid_rowconfigure(1, weight=1)
+
+        table_header = ctk.CTkFrame(table_frame, fg_color="transparent")
+        table_header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=(7, 0))
+        table_header.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(table_header, text="Playlist Songs", font=ctk.CTkFont(size=14, weight="bold")).grid(
+            row=0, column=0, sticky="w"
+        )
+        ctk.CTkLabel(table_header, textvariable=self.stats_var).grid(row=0, column=1, sticky="e")
+
+        cols = ["hash", "name", "author", "beatmapper", "difficulty", "trackDuration", "addedTime"]
+        self.column_labels = {
+            "hash": "hash",
+            "name": "name",
+            "author": "artist",
+            "beatmapper": "mapper",
+            "difficulty": "difficulty",
+            "trackDuration": "duration",
+            "addedTime": "added",
+        }
+        self.tree = ttk.Treeview(
+            table_frame,
+            columns=cols,
+            show="headings",
+            selectmode="extended",
+            style="Playlist.Treeview",
+        )
+        for col_name in cols:
+            self.tree.heading(col_name, text=self.column_labels[col_name], command=lambda col=col_name: self.on_column_click(col))
+            width = 80
+            if col_name == "hash":
+                width = 240
+            elif col_name == "difficulty":
+                width = 180
+            elif col_name in {"name", "author", "beatmapper"}:
+                width = 150
+            self.tree.column(col_name, width=width, anchor="w")
+
+        palette = THEME_PRESETS["dark"]
+        yscroll = ctk.CTkScrollbar(
+            table_frame,
+            orientation="vertical",
+            command=self.tree.yview,
+            width=13,
+            fg_color="transparent",
+            button_color=palette["surface_alt"],
+            button_hover_color=palette["accent"],
+        )
+        self.tree.configure(yscrollcommand=yscroll.set)
+        self.tree.grid(row=1, column=0, sticky="nsew", padx=(10, 0), pady=(3, 10))
+        yscroll.grid(row=1, column=1, sticky="ns", pady=(3, 10), padx=(4, 10))
+        self.tree.bind("<ButtonPress-1>", self.on_song_tree_press)
+        self.tree.bind("<B1-Motion>", self.on_song_tree_motion)
+        self.tree.bind("<ButtonRelease-1>", self.on_song_tree_release)
+
+        sidebar = ctk.CTkFrame(content, corner_radius=8, width=190)
+        sidebar.grid(row=0, column=1, sticky="ns")
+        sidebar.grid_propagate(False)
+
+        song_actions = ctk.CTkFrame(sidebar, fg_color="transparent")
+        song_actions.pack(fill="x", padx=9, pady=(9, 4))
+        ctk.CTkLabel(song_actions, text="Song Actions", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(0, 4))
+        ctk.CTkButton(song_actions, text="Remove Selected", height=28, command=self.remove_selected).pack(fill="x", pady=2)
+        ctk.CTkButton(song_actions, text="Clear All Songs", height=28, command=self.clear_all_songs).pack(fill="x", pady=2)
+        ctk.CTkButton(song_actions, text="Move Up", height=28, command=lambda: self.move_selected(-1)).pack(fill="x", pady=(9, 2))
+        ctk.CTkButton(song_actions, text="Move Down", height=28, command=lambda: self.move_selected(1)).pack(fill="x", pady=2)
+
+        download_actions = ctk.CTkFrame(sidebar, fg_color="transparent")
+        download_actions.pack(fill="x", padx=9, pady=(6, 9))
+        ctk.CTkLabel(download_actions, text="Downloads", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(0, 4))
+        ctk.CTkButton(download_actions, text="Download Selected", height=28, command=self.download_selected).pack(fill="x", pady=2)
+        ctk.CTkButton(download_actions, text="Download All", height=28, command=self.download_all).pack(fill="x", pady=2)
+        ctk.CTkButton(download_actions, text="Send to Quest", height=28, command=self.send_playlist_to_quest).pack(fill="x", pady=(9, 2))
+
+        dl_frame = ctk.CTkFrame(root, corner_radius=8)
+        dl_frame.pack(fill="x", pady=(6, 0))
+        dl_frame.grid_columnconfigure(3, weight=1)
+        ctk.CTkLabel(dl_frame, text="Download:").grid(row=0, column=0, padx=(10, 6), pady=6, sticky="w")
+        self.download_progress = ctk.CTkProgressBar(dl_frame, mode="determinate", width=350)
+        self.download_progress.set(0)
+        self.download_progress.grid(row=0, column=1, padx=(0, 8), pady=6, sticky="w")
+        ctk.CTkLabel(dl_frame, textvariable=self.download_percent_var, width=48).grid(row=0, column=2, padx=(0, 8), pady=6)
+        ctk.CTkLabel(dl_frame, textvariable=self.download_status_var).grid(row=0, column=3, padx=(0, 8), pady=6, sticky="w")
+        self.cancel_download_btn = ctk.CTkButton(
+            dl_frame,
+            text="Cancel Download",
+            command=self.request_cancel_download,
+            state="disabled",
+            width=136,
+            height=28,
+        )
+        self.cancel_download_btn.grid(row=0, column=4, padx=(8, 10), pady=6, sticky="e")
+
+        quest_frame = ctk.CTkFrame(quest_tab, corner_radius=8)
+        quest_frame.pack(fill="x", padx=4, pady=4)
+        self.quest_status_canvas = tk.Canvas(quest_frame, width=16, height=16, highlightthickness=0, bd=0)
+        self.quest_status_canvas.grid(row=0, column=0, padx=(12, 4), pady=10, sticky="w")
+        self.quest_status_indicator = self.quest_status_canvas.create_oval(2, 2, 14, 14, fill="#b91c1c", outline="")
+        self.quest_status_var = tk.StringVar(value="Quest: Not detected")
+        ctk.CTkLabel(quest_frame, textvariable=self.quest_status_var).grid(row=0, column=1, padx=(0, 12), pady=10, sticky="w")
+        ctk.CTkButton(quest_frame, text="Refresh Status", width=120, command=self.refresh_quest_status).grid(
+            row=0, column=4, padx=6, pady=10, sticky="e"
+        )
+        ctk.CTkButton(quest_frame, text="Manage Headset Songs", width=170, command=self.open_quest_song_manager).grid(
+            row=0, column=5, padx=(0, 6), pady=10, sticky="e"
+        )
+        ctk.CTkButton(quest_frame, text="Manage Headset Playlists", width=190, command=self.open_quest_playlist_manager).grid(
+            row=0, column=6, padx=(0, 6), pady=10, sticky="e"
+        )
+        ctk.CTkLabel(quest_frame, textvariable=self.quest_adb_var).grid(row=0, column=7, padx=(6, 12), pady=10, sticky="e")
+        ctk.CTkLabel(quest_frame, text="Songs Dir").grid(row=1, column=0, padx=8, pady=8, sticky="e")
+        ctk.CTkEntry(quest_frame, textvariable=self.quest_song_dir_var, width=360).grid(
+            row=1, column=1, columnspan=2, padx=8, pady=8, sticky="we"
+        )
+        ctk.CTkLabel(quest_frame, text="Playlist Dir").grid(row=1, column=3, padx=8, pady=8, sticky="e")
+        ctk.CTkEntry(quest_frame, textvariable=self.quest_playlist_dir_var, width=360).grid(
+            row=1, column=4, columnspan=2, padx=8, pady=8, sticky="we"
+        )
+        quest_frame.grid_columnconfigure(1, weight=1)
+        quest_frame.grid_columnconfigure(2, weight=1)
+        quest_frame.grid_columnconfigure(4, weight=1)
+        quest_frame.grid_columnconfigure(7, weight=1)
+
+    def _build_ctk_color_picker_field(self, parent: tk.Widget, key: str, row: int, col: int) -> None:
+        assert ctk is not None
+        cell = ctk.CTkFrame(parent, fg_color="transparent")
+        cell.grid(row=row, column=col, padx=8, pady=5, sticky="we")
+        cell.grid_columnconfigure(0, weight=1)
+
+        entry = ctk.CTkEntry(cell, textvariable=self.playlist_vars[key], width=140, state="readonly")
+        entry.grid(row=0, column=0, sticky="we")
+        entry.bind("<Button-1>", lambda _event, field=key: self.choose_playlist_color(field))
+
+        preview = tk.Canvas(cell, width=22, height=22, highlightthickness=1, bd=0)
+        preview.grid(row=0, column=1, padx=(6, 6))
+        preview.bind("<Button-1>", lambda _event, field=key: self.choose_playlist_color(field))
+        self.color_preview_canvases[key] = preview
+
+        ctk.CTkButton(cell, text="Choose", width=78, command=lambda field=key: self.choose_playlist_color(field)).grid(
+            row=0, column=2, sticky="w"
+        )
+        self.update_color_preview(key)
+
     def _build_color_picker_field(self, parent: ttk.Frame, key: str, row: int, col: int) -> None:
         cell = ttk.Frame(parent)
         cell.grid(row=row, column=col, padx=6, pady=4, sticky="we")
@@ -4000,7 +4987,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.update_column_headers()
         self.current_view_indices = self.get_visible_indices()
         self.tree.delete(*self.tree.get_children())
-        for idx in self.current_view_indices:
+        for view_row, idx in enumerate(self.current_view_indices):
             song = self.songs[idx]
             self.tree.insert(
                 "",
@@ -4015,6 +5002,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                     self.format_mmss(song.trackDuration),
                     self.format_added_time(song.addedTime),
                 ),
+                tags=(self.playlist_row_tag(view_row),),
             )
         if keep_index is not None and keep_index in self.current_view_indices:
             self.tree.selection_set(str(keep_index))
@@ -4022,6 +5010,16 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.update_stats()
         self.schedule_session_save()
         self.clear_drag_state()
+
+    def playlist_row_tag(self, view_row: int) -> str:
+        return "playlist_even_row" if view_row % 2 == 0 else "playlist_odd_row"
+
+    def playlist_row_tag_for_iid(self, item_id: str) -> str:
+        try:
+            view_row = self.current_view_indices.index(int(item_id))
+        except (ValueError, TypeError):
+            view_row = 0
+        return self.playlist_row_tag(view_row)
 
     def format_hhmmss(self, total_seconds: float) -> str:
         seconds = max(0, int(round(total_seconds)))
@@ -4065,11 +5063,16 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
         duration_mode = self.duration_filter_mode.get()
         duration_value = self.parse_duration_filter(self.duration_filter_value.get())
+        duration_value_max = self.parse_duration_filter(self.duration_filter_value_max.get())
         if duration_mode in {"Over", "Under"} and duration_value is not None:
             if duration_mode == "Over":
                 indices = [i for i in indices if self.songs[i].trackDuration > duration_value]
             else:
                 indices = [i for i in indices if self.songs[i].trackDuration < duration_value]
+        elif duration_mode == "Between" and duration_value is not None and duration_value_max is not None:
+            low = min(duration_value, duration_value_max)
+            high = max(duration_value, duration_value_max)
+            indices = [i for i in indices if low <= self.songs[i].trackDuration <= high]
 
         diff_choice = self.difficulty_filter_choice.get().strip().lower()
         if diff_choice and diff_choice != "any":
@@ -4130,6 +5133,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
     def clear_filters(self) -> None:
         self.duration_filter_mode.set("Any")
         self.duration_filter_value.set("")
+        self.duration_filter_value_max.set("")
         self.difficulty_filter_choice.set("Any")
         self.refresh_table()
 
@@ -4140,6 +5144,8 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             return False
         if self.duration_filter_value.get().strip():
             return False
+        if self.duration_filter_value_max.get().strip():
+            return False
         if self.difficulty_filter_choice.get().strip().lower() != "any":
             return False
         return True
@@ -4148,7 +5154,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.drag_source_iid = None
         self.drag_target_iid = None
         for item_id in self.tree.get_children():
-            self.tree.item(item_id, tags=())
+            self.tree.item(item_id, tags=(self.playlist_row_tag_for_iid(item_id),))
 
     def on_song_tree_press(self, event) -> None:  # type: ignore[no-untyped-def]
         row_id = self.tree.identify_row(event.y)
@@ -4174,7 +5180,9 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         row_id = self.tree.identify_row(event.y)
         self.drag_target_iid = row_id if row_id else None
         for item_id in self.tree.get_children():
-            self.tree.item(item_id, tags=("drag_target",) if item_id == self.drag_target_iid else ())
+            row_tag = self.playlist_row_tag_for_iid(item_id)
+            tags = (row_tag, "drag_target") if item_id == self.drag_target_iid else (row_tag,)
+            self.tree.item(item_id, tags=tags)
 
     def on_song_tree_release(self, _event=None) -> None:
         if self.drag_source_iid is None or self.drag_target_iid is None:
@@ -4224,17 +5232,34 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.stats_var.set(f"Songs: {len(self.songs)} | Total Length: {self.format_hhmmss(total_seconds)}")
 
     def toggle_theme(self) -> None:
-        new_mode = "dark" if self.theme_mode_var.get() == "light" else "light"
-        self.theme_mode_var.set(new_mode)
+        self.theme_mode_var.set("dark")
         self.apply_theme()
         self.schedule_session_save()
 
     def apply_theme(self) -> None:
-        mode = self.theme_mode_var.get()
+        if self.theme_mode_var.get() != "dark":
+            self.theme_mode_var.set("dark")
+        mode = "dark"
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            ctk.set_appearance_mode("dark")
         palette = THEME_PRESETS.get(mode, THEME_PRESETS["light"])
-        icon = "\u263d" if mode == "dark" else "\u2600"
-        label = "Dark" if mode == "dark" else "Light"
+        icon = "\u263d"
+        label = "Dark"
         self.theme_button_var.set(f"{icon} {label}")
+        if hasattr(self, "theme_switch"):
+            try:
+                self.theme_switch.configure(text=f"{icon} {label}")
+                if mode == "dark":
+                    self.theme_switch.select()
+                else:
+                    self.theme_switch.deselect()
+            except Exception:
+                pass
+        if HAS_CUSTOMTKINTER and ctk is not None:
+            try:
+                self.configure(fg_color=palette["bg"])
+            except Exception:
+                pass
         # Keep theming in ttk styles instead of Tk's root palette. On some Windows/Tk
         # setups, palette updates can mis-parse font names like "Segoe UI" during startup.
 
@@ -4312,16 +5337,85 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             fieldbackground=palette["surface"],
             foreground=palette["fg"],
             bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            borderwidth=0,
+            relief="flat",
             rowheight=24,
         )
-        self.style.configure("Treeview.Heading", background=palette["surface_alt"], foreground=palette["fg"], bordercolor=palette["border"])
-        self.style.configure("TScrollbar", background=palette["surface_alt"], troughcolor=palette["bg"], bordercolor=palette["border"])
+        self.style.configure(
+            "Treeview.Heading",
+            background=palette["surface_alt"],
+            foreground=palette["fg"],
+            bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            borderwidth=0,
+            relief="flat",
+        )
+        try:
+            self.style.layout("Playlist.Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
+        except tk.TclError:
+            pass
+        self.style.configure(
+            "Playlist.Treeview",
+            background=palette["table_even"],
+            fieldbackground=palette["table_even"],
+            foreground=palette["fg"],
+            bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            borderwidth=0,
+            relief="flat",
+            rowheight=28,
+            font=("Segoe UI", 10),
+        )
+        self.style.map(
+            "Playlist.Treeview",
+            background=[("selected", palette["select_bg"])],
+            foreground=[("selected", palette["select_fg"])],
+        )
+        self.style.configure(
+            "Playlist.Treeview.Heading",
+            background=palette["table_heading"],
+            foreground=palette["fg"],
+            bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            borderwidth=0,
+            relief="flat",
+            padding=(9, 5),
+            font=("Segoe UI Semibold", 10),
+        )
+        self.style.map(
+            "Playlist.Treeview.Heading",
+            background=[("active", palette["surface_alt"])],
+            foreground=[("active", palette["fg"])],
+        )
+        self.style.configure(
+            "TScrollbar",
+            background=palette["surface_alt"],
+            troughcolor=palette["bg"],
+            bordercolor=palette["border"],
+            lightcolor=palette["border"],
+            darkcolor=palette["border"],
+            arrowcolor=palette["muted"],
+            borderwidth=0,
+            relief="flat",
+        )
         self.style.configure(
             "Horizontal.TProgressbar",
             background=palette["accent"],
             troughcolor=palette["surface_alt"],
             bordercolor=palette["border"],
         )
+        if hasattr(self, "tree"):
+            try:
+                self.tree.tag_configure("playlist_even_row", background=palette["table_even"], foreground=palette["fg"])
+                self.tree.tag_configure("playlist_odd_row", background=palette["table_odd"], foreground=palette["fg"])
+                self.tree.tag_configure("drag_target", background=palette["drag_target"], foreground=palette["select_fg"])
+            except tk.TclError:
+                pass
         for key in self.color_preview_canvases:
             self.update_color_preview(key)
 
@@ -4431,6 +5525,8 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             self.download_progress.stop()
             self.download_progress.configure(mode="determinate")
             value = max(0.0, min(100.0, percent if percent is not None else 0.0))
+            if HAS_CUSTOMTKINTER and ctk is not None and isinstance(self.download_progress, ctk.CTkProgressBar):
+                self.download_progress.set(value / 100.0)
             self.download_progress_var.set(value)
             self.download_percent_var.set(f"{int(round(value))}%")
         self.download_status_var.set(status_text)
@@ -4445,6 +5541,8 @@ class PlaylistEditorApp(BASE_TK_CLASS):
     def reset_download_progress(self, status_text: str = "Idle") -> None:
         self.download_progress.stop()
         self.download_progress.configure(mode="determinate")
+        if HAS_CUSTOMTKINTER and ctk is not None and isinstance(self.download_progress, ctk.CTkProgressBar):
+            self.download_progress.set(0)
         self.download_progress_var.set(0.0)
         self.download_percent_var.set("0%")
         self.download_status_var.set(status_text)
@@ -4568,8 +5666,9 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.download_events.put((event_type, payload))
 
     def show_text_report_dialog(self, title: str, report_text: str, default_filename: str = "download_report.txt") -> None:
-        dialog = tk.Toplevel(self)
+        dialog = BASE_DIALOG_CLASS(self)
         dialog.title(title)
+        apply_app_window_icon(dialog)
         dialog.geometry("900x620")
         dialog.minsize(700, 420)
         dialog.transient(self)
@@ -4679,7 +5778,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.url_var.set("")
 
     def open_beatmap_browser(self) -> None:
-        dialog = BeatmapBrowserDialog(self, on_add_songs=self.add_songs_from_list_browser)
+        dialog = BeatmapBrowserDialog(self, on_add_songs=self.add_songs_from_list_browser, existing_songs=self.songs)
         self.wait_window(dialog)
         if dialog.result is None:
             return
@@ -4713,7 +5812,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         return True
 
     def open_visual_browser(self) -> None:
-        dialog = VisualBeatmapBrowserDialog(self, on_add_song=self.add_song_from_visual_browser)
+        dialog = VisualBeatmapBrowserDialog(self, on_add_song=self.add_song_from_visual_browser, existing_songs=self.songs)
         self.wait_window(dialog)
         if not dialog.result:
             return
@@ -5429,10 +6528,8 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 self.quest_song_dir_var.set(str(quest_raw.get("song_dir", self.quest_song_dir_var.get())))
                 self.quest_playlist_dir_var.set(str(quest_raw.get("playlist_dir", self.quest_playlist_dir_var.get())))
 
-            theme_mode = str(raw.get("theme_mode", self.theme_mode_var.get()))
-            if theme_mode in THEME_PRESETS:
-                self.theme_mode_var.set(theme_mode)
-                self.apply_theme()
+            self.theme_mode_var.set("dark")
+            self.apply_theme()
 
             songs_raw = raw.get("songs", [])
             restored: list[SongEntry] = []

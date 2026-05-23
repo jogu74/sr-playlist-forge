@@ -7,6 +7,9 @@ datas = []
 tools_dir = project_dir / "tools"
 if tools_dir.exists():
     datas.append((str(tools_dir), "tools"))
+assets_dir = project_dir / "assets"
+if assets_dir.exists():
+    datas.append((str(assets_dir), "assets"))
 
 a = Analysis(
     ['synth_playlist_editor.py'],
