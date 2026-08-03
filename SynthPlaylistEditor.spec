@@ -1,16 +1,27 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files
+
+project_dir = Path(SPECPATH).resolve().parent
 
 a = Analysis(
     ['synth_playlist_editor.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
-    hookspath=[],
+    datas=collect_data_files('UnityPy'),
+    hiddenimports=['modern_gui', 'UnityPy'],
+    hookspath=[str(project_dir / 'hooks')],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'numpy',
+        'pandas',
+        'scipy',
+        'sqlalchemy',
+        'PIL._avif',
+        'PIL.AvifImagePlugin',
+    ],
     noarchive=False,
     optimize=0,
 )

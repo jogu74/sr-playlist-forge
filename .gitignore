@@ -18,6 +18,10 @@ release/windows/
 release/installer/
 release/*.spec
 !release/*.iss
+backups/
+headset-analysis/
+.external/
+.codex-security-scans/
 
 # PyInstaller temp files
 *.spec.bak

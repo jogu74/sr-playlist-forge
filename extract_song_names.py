@@ -10,8 +10,16 @@ def extract_song_names(playlist_path: Path) -> list[str]:
     with playlist_path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
+    if not isinstance(data, dict):
+        raise ValueError(f"Playlist root must be a JSON object: {playlist_path}")
     songs = data.get("dataString", [])
-    return [str(item.get("name", "")).strip() for item in songs if item.get("name")]
+    if not isinstance(songs, list):
+        raise ValueError(f"Playlist dataString must be a list: {playlist_path}")
+    return [
+        str(item.get("name", "")).strip()
+        for item in songs
+        if isinstance(item, dict) and item.get("name")
+    ]
 
 
 def main() -> None:
@@ -32,6 +40,8 @@ def main() -> None:
 
     input_dir = Path(args.input_dir)
     output_dir = Path(args.output_dir)
+    if not input_dir.is_dir():
+        raise SystemExit(f"Input directory does not exist: {input_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     playlist_files = sorted(input_dir.glob("*.playlist"))

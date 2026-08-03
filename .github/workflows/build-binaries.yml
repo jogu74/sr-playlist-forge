@@ -1,5 +1,8 @@
 name: Build Binaries
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
@@ -7,8 +10,13 @@ on:
       - main
     paths:
       - "synth_playlist_editor.py"
+      - "modern_gui.py"
+      - "playlist_visual_assets.py"
+      - "hooks/**"
       - "requirements-build.txt"
+      - "assets/**"
       - "scripts/**"
+      - "tests/**"
       - ".github/workflows/build-binaries.yml"
 
 jobs:
@@ -35,8 +43,10 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements-build.txt
+          python -m pip install --disable-pip-version-check -r requirements-build.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
 
       - name: Generate icons
         run: |
@@ -54,13 +64,13 @@ jobs:
       - name: Build with PyInstaller (macOS)
         if: runner.os == 'macOS'
         run: |
-          pyinstaller --noconfirm --onefile --windowed --clean --icon "assets/icon.icns" --name "SR Playlist Forge" synth_playlist_editor.py
+          python -m PyInstaller --noconfirm --onefile --windowed --clean --additional-hooks-dir hooks --collect-data UnityPy --hidden-import UnityPy --exclude-module numpy --exclude-module pandas --exclude-module scipy --exclude-module sqlalchemy --exclude-module PIL._avif --exclude-module PIL.AvifImagePlugin --add-data "assets:assets" --add-data "icon.png:." --icon "assets/icon.icns" --name "SR Playlist Forge" synth_playlist_editor.py
 
       - name: Build with PyInstaller (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --onefile --windowed --clean --icon "assets/icon.ico" --name "SR Playlist Forge" synth_playlist_editor.py
+          python -m PyInstaller --noconfirm --onefile --windowed --clean --additional-hooks-dir hooks --collect-data UnityPy --hidden-import UnityPy --exclude-module numpy --exclude-module pandas --exclude-module scipy --exclude-module sqlalchemy --exclude-module PIL._avif --exclude-module PIL.AvifImagePlugin --add-data "assets;assets" --add-data "icon.png;." --icon "assets/icon.ico" --name "SR Playlist Forge" synth_playlist_editor.py
 
       - name: Zip macOS binary
         if: runner.os == 'macOS'

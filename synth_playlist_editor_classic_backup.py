@@ -16,7 +16,6 @@ import threading
 import time
 import traceback
 import tkinter as tk
-import uuid
 import zipfile
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -26,11 +25,9 @@ from tkinter import scrolledtext
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote_plus, unquote, urlencode, urljoin, urlparse
+from urllib.parse import quote_plus, unquote, urljoin
 from urllib.request import Request, urlopen
 import webbrowser
-
-import playlist_visual_assets as visual_assets
 
 if os.name == "nt":
     import msvcrt
@@ -71,186 +68,19 @@ else:
     BASE_DIALOG_CLASS = tk.Toplevel
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageTk
+    from PIL import Image, ImageOps, ImageTk
 
     HAS_PILLOW = True
 except Exception:  # noqa: BLE001
     Image = None
-    ImageDraw = None
-    ImageFont = None
     ImageOps = None
     ImageTk = None
     HAS_PILLOW = False
 
 ENABLE_HOVER_TOOLTIPS = not getattr(sys, "frozen", False)
-APP_VERSION = "3.0.0"
-MAX_JSON_RESPONSE_BYTES = 16 * 1024 * 1024
-MAX_TEXT_RESPONSE_BYTES = 16 * 1024 * 1024
-MAX_COVER_RESPONSE_BYTES = 12 * 1024 * 1024
-MAX_SONG_DOWNLOAD_BYTES = 1024 * 1024 * 1024
-MAX_DOWNLOAD_URL_ATTEMPTS = 32
-MAX_BEATMAP_FALLBACK_PAGES = 50
-MAX_SYNTH_METADATA_MEMBERS = 128
-MAX_SYNTH_METADATA_BYTES = 16 * 1024 * 1024
-MAX_COMMUNITY_PLAYLIST_ITEMS = 2000
-MAX_COMMUNITY_PLAYLIST_SONGS = 10000
-COMMUNITY_PLAYLIST_SELECT_FIELDS = (
-    "id,name,description,user.id,user.username,download_url,cover_url,cover_version,"
-    "published_at,download_count,upvote_count,downvote_count,vote_diff,score,rating,version"
-)
-CURATED_PLAYLIST_CATEGORIES = (
-    "Getting Started",
-    "Events",
-    "Staff Picks",
-    "Synth Riders Official",
-    "Star Mappers",
-)
-EARLIEST_BEATMAP_DATE = "2019-08-20"
-MIN_SAVED_COLUMN_WIDTH = 0
-MAX_SAVED_COLUMN_WIDTH = 5000
-WINDOW_GEOMETRY_PATTERN = re.compile(r"^(\d+)x(\d+)([+-]\d+)([+-]\d+)$")
-MIN_RESTORED_WINDOW_WIDTH = 640
-MIN_RESTORED_WINDOW_HEIGHT = 480
 
 
 _APP_ICON_PHOTO: Any | None = None
-_TABLE_COLUMN_WIDTHS_CACHE: dict[str, dict[str, int]] | None = None
-_TABLE_COLUMN_WIDTHS_LOCK = threading.RLock()
-
-
-def parse_window_geometry(value: Any) -> tuple[int, int, int, int] | None:
-    if not isinstance(value, str):
-        return None
-    match = WINDOW_GEOMETRY_PATTERN.fullmatch(value.strip())
-    if match is None:
-        return None
-    width, height, x, y = (int(part) for part in match.groups())
-    if width < MIN_RESTORED_WINDOW_WIDTH or height < MIN_RESTORED_WINDOW_HEIGHT:
-        return None
-    return width, height, x, y
-
-
-def table_column_widths_file_path() -> Path:
-    return Path.home() / ".sr_playlist_forge_table_columns.json"
-
-
-def validated_table_column_widths(raw: Any, columns: list[str] | tuple[str, ...]) -> dict[str, int]:
-    if not isinstance(raw, dict):
-        return {}
-    allowed = set(columns)
-    widths: dict[str, int] = {}
-    for column, value in raw.items():
-        if not isinstance(column, str) or column not in allowed or isinstance(value, bool):
-            continue
-        try:
-            width = int(value)
-        except (TypeError, ValueError):
-            continue
-        if MIN_SAVED_COLUMN_WIDTH <= width <= MAX_SAVED_COLUMN_WIDTH:
-            widths[column] = width
-    return widths
-
-
-def load_table_column_widths() -> dict[str, dict[str, int]]:
-    global _TABLE_COLUMN_WIDTHS_CACHE
-    with _TABLE_COLUMN_WIDTHS_LOCK:
-        if _TABLE_COLUMN_WIDTHS_CACHE is not None:
-            return _TABLE_COLUMN_WIDTHS_CACHE
-        path = table_column_widths_file_path()
-        try:
-            raw = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-        except (OSError, json.JSONDecodeError):
-            raw = {}
-        layouts: dict[str, dict[str, int]] = {}
-        if isinstance(raw, dict):
-            for layout_key, widths in raw.items():
-                if isinstance(layout_key, str) and isinstance(widths, dict):
-                    layouts[layout_key] = {
-                        str(column): int(width)
-                        for column, width in widths.items()
-                        if isinstance(column, str)
-                        and not isinstance(width, bool)
-                        and isinstance(width, (int, float))
-                        and MIN_SAVED_COLUMN_WIDTH <= int(width) <= MAX_SAVED_COLUMN_WIDTH
-                    }
-        _TABLE_COLUMN_WIDTHS_CACHE = layouts
-        return layouts
-
-
-def save_table_column_widths(layout_key: str, widths: dict[str, int]) -> None:
-    if not layout_key or not widths:
-        return
-    with _TABLE_COLUMN_WIDTHS_LOCK:
-        layouts = load_table_column_widths()
-        layouts[layout_key] = dict(widths)
-        try:
-            atomic_write_text(
-                table_column_widths_file_path(),
-                json.dumps(layouts, ensure_ascii=False, indent=2, sort_keys=True),
-            )
-        except OSError:
-            pass
-
-
-def install_tree_column_width_persistence(
-    tree: ttk.Treeview,
-    layout_key: str,
-    columns: list[str] | tuple[str, ...],
-) -> None:
-    saved = validated_table_column_widths(load_table_column_widths().get(layout_key), columns)
-    for column, width in saved.items():
-        try:
-            tree.column(column, width=width)
-        except tk.TclError:
-            pass
-
-    def save_after_resize(event: tk.Event) -> None:
-        try:
-            if tree.identify_region(event.x, event.y) != "separator":
-                return
-        except (AttributeError, tk.TclError):
-            return
-
-        def persist() -> None:
-            widths: dict[str, int] = {}
-            for column in columns:
-                try:
-                    widths[column] = int(tree.column(column, "width"))
-                except (TypeError, ValueError, tk.TclError):
-                    continue
-            save_table_column_widths(layout_key, widths)
-
-        try:
-            tree.after_idle(persist)
-        except tk.TclError:
-            pass
-
-    tree.bind("<ButtonRelease-1>", save_after_resize, add="+")
-
-
-def constrain_window_geometry(
-    value: Any,
-    screen_bounds: tuple[int, int, int, int],
-) -> str | None:
-    parsed = parse_window_geometry(value)
-    if parsed is None:
-        return None
-    width, height, x, y = parsed
-    screen_x, screen_y, screen_width, screen_height = screen_bounds
-    if screen_width <= 0 or screen_height <= 0:
-        return None
-
-    width = min(width, screen_width)
-    height = min(height, screen_height)
-    right = screen_x + screen_width
-    bottom = screen_y + screen_height
-    visible_width = max(0, min(x + width, right) - max(x, screen_x))
-    visible_height = max(0, min(y + height, bottom) - max(y, screen_y))
-
-    if visible_width < 120 or visible_height < 40:
-        x = screen_x + max(0, (screen_width - width) // 2)
-        y = screen_y + max(0, (screen_height - height) // 2)
-    return f"{width}x{height}{x:+d}{y:+d}"
 
 
 def app_resource_path(*parts: str) -> Path:
@@ -266,33 +96,6 @@ def app_resource_path(*parts: str) -> Path:
     return candidates[0]
 
 
-def reorder_items_by_index_ids(items: list[Any], ordered_ids: tuple[str, ...] | list[str]) -> list[Any]:
-    """Return items in the exact order represented by Treeview index IDs."""
-    try:
-        indices = [int(item_id) for item_id in ordered_ids]
-    except (TypeError, ValueError) as err:
-        raise ValueError("Playlist row IDs must be numeric") from err
-    if sorted(indices) != list(range(len(items))):
-        raise ValueError("Playlist row IDs must contain every item exactly once")
-    return [items[index] for index in indices]
-
-
-def move_id_group(
-    current_ids: tuple[str, ...] | list[str],
-    dragged_ids: tuple[str, ...] | list[str],
-    insertion_index: int,
-) -> list[str]:
-    """Move selected IDs as one stable block into the remaining row order."""
-    current = list(current_ids)
-    dragged_set = set(dragged_ids)
-    if not dragged_set or not dragged_set.issubset(current) or len(dragged_set) != len(dragged_ids):
-        raise ValueError("Dragged row IDs must be a unique, non-empty subset of the playlist")
-    dragged = [item_id for item_id in current if item_id in dragged_set]
-    remaining = [item_id for item_id in current if item_id not in dragged_set]
-    position = max(0, min(insertion_index, len(remaining)))
-    return remaining[:position] + dragged + remaining[position:]
-
-
 def app_icon_photo() -> Any | None:
     global _APP_ICON_PHOTO
     if _APP_ICON_PHOTO is not None:
@@ -301,8 +104,7 @@ def app_icon_photo() -> Any | None:
     icon_png = app_resource_path("icon.png")
     try:
         if HAS_PILLOW and Image is not None and ImageTk is not None and icon_ico.exists():
-            with Image.open(icon_ico) as source_image:
-                source = source_image.convert("RGBA")
+            source = Image.open(icon_ico).convert("RGBA")
             contained = ImageOps.contain(source, (64, 64), Image.Resampling.LANCZOS) if ImageOps is not None else source.resize((64, 64))
             square = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
             square.paste(contained, ((64 - contained.width) // 2, (64 - contained.height) // 2), contained)
@@ -448,7 +250,6 @@ THEME_PRESETS = {
         "table_odd": "#f8fbff",
         "table_heading": "#e6ecf8",
         "drag_target": "#c7e7ff",
-        "drag_source": "#2563eb",
         "danger": "#991b1b",
         "success": "#166534",
         "warning": "#92400e",
@@ -470,7 +271,6 @@ THEME_PRESETS = {
         "table_odd": "#1A1B20",
         "table_heading": "#252731",
         "drag_target": "#5D46D6",
-        "drag_source": "#7B61FF",
         "danger": "#FCA5A5",
         "success": "#A7F3D0",
         "warning": "#FDE68A",
@@ -549,25 +349,6 @@ class BeatmapListEntry:
     difficulty_text: str
     download_count: int
     record: dict[str, Any]
-    upvote_count: int = 0
-
-
-@dataclass
-class CommunityPlaylistEntry:
-    playlist_id: str
-    name: str
-    description: str
-    creator: str
-    published_text: str
-    published_sort: int
-    download_count: int
-    vote_score: int
-    cover_version: int
-    cover_url: str
-    download_url: str
-    record: dict[str, Any]
-    curated_categories: tuple[str, ...] = ()
-    in_browse_all: bool = True
 
 
 def song_hash_from_record(record: dict[str, Any]) -> str:
@@ -588,38 +369,6 @@ def playlist_identity_sets(songs: list[SongEntry]) -> tuple[set[str], set[str]]:
     return hashes, beatmap_ids
 
 
-def normalized_track_identity(title: str, artist: str) -> tuple[str, str] | None:
-    normalized_title = re.sub(r"[\W_]+", " ", title.casefold()).strip()
-    normalized_artist = re.sub(r"[\W_]+", " ", artist.casefold()).strip()
-    if not normalized_title or not normalized_artist:
-        return None
-    return normalized_title, normalized_artist
-
-
-def playlist_track_identity_set(songs: list[SongEntry]) -> set[tuple[str, str]]:
-    identities: set[tuple[str, str]] = set()
-    for song in songs:
-        identity = normalized_track_identity(song.name, song.author)
-        if identity is not None:
-            identities.add(identity)
-    return identities
-
-
-def beatmap_playlist_match_kind(
-    row: BeatmapListEntry,
-    hashes: set[str],
-    beatmap_ids: set[str],
-    track_identities: set[tuple[str, str]],
-) -> str:
-    row_hash = song_hash_from_record(row.record)
-    if (row_hash and row_hash in hashes) or (row.beatmap_id and row.beatmap_id in beatmap_ids):
-        return "exact"
-    track_identity = normalized_track_identity(row.title, row.artist)
-    if track_identity is not None and track_identity in track_identities:
-        return "track"
-    return ""
-
-
 @dataclass
 class HeadsetSongIdentity:
     file_name: str
@@ -631,19 +380,9 @@ class HeadsetSongIdentity:
     source: str = "unknown"
 
 
-@dataclass(frozen=True)
-class PlaylistRenameAction:
-    source_name: str
-    target_name: str
-    assigned_number: int
-
-
 HEADSET_SYNTH_METADATA_CACHE: dict[str, HeadsetSongIdentity] = {}
 BEATMAP_RECORD_BY_HASH_CACHE: dict[str, dict[str, Any] | None] = {}
 BEATMAP_RECORD_BY_TITLE_ARTIST_CACHE: dict[str, dict[str, Any] | None] = {}
-BEATMAP_LIST_MEMORY_CACHE: tuple[tuple[int, int], tuple[BeatmapListEntry, ...]] | None = None
-BEATMAP_LIST_CACHE_LOCK = threading.Lock()
-EXCEPTION_LOG_LOCK = threading.Lock()
 
 
 def force_int(value: Any, default: int = 0) -> int:
@@ -658,109 +397,6 @@ def force_float(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
-
-
-def wrapped_option_index(value: Any, delta: int, option_count: int) -> int:
-    if option_count <= 0:
-        raise ValueError("option_count must be positive")
-    return (force_int(value, 0) + delta) % option_count
-
-
-def song_entry_from_playlist_item(item: dict[str, Any], default_added_time: int | None = None) -> SongEntry:
-    added_time = int(time.time()) if default_added_time is None else default_added_time
-    return SongEntry(
-        hash=str(item.get("hash", "")).strip(),
-        name=str(item.get("name", "")),
-        author=str(item.get("author", "")),
-        beatmapper=str(item.get("beatmapper", "")),
-        difficulty=force_int(item.get("difficulty"), 0),
-        difficultyText=str(item.get("difficultyText", item.get("difficulty", ""))),
-        trackDuration=force_float(item.get("trackDuration"), 0.0),
-        addedTime=force_int(item.get("addedTime"), added_time),
-        beatmapId=str(item.get("beatmapId", "")),
-        sourceUrl=str(item.get("sourceUrl", "")),
-        downloadUrl=str(item.get("downloadUrl", "")),
-    )
-
-
-def playlist_song_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    raw_items = payload.get("dataString", [])
-    if not isinstance(raw_items, list):
-        return []
-    return [item for item in raw_items if isinstance(item, dict)]
-
-
-def playlist_number_from_source_name(source_name: str) -> str | None:
-    match = re.match(r"^(\d{1,6})__", Path(source_name).stem)
-    return str(int(match.group(1))) if match else None
-
-
-def next_playlist_number_from_names(file_names: list[str]) -> int:
-    """Return one above the highest numbered Quest playlist filename."""
-    highest = 0
-    for file_name in file_names:
-        name = Path(str(file_name or "")).name
-        if not name.lower().endswith(".playlist"):
-            continue
-        match = re.match(r"^(\d{1,6})__", name)
-        if match is not None:
-            highest = max(highest, int(match.group(1)))
-    if highest >= 999999:
-        raise ValueError("Quest already contains the highest supported playlist number (999999).")
-    return highest + 1
-
-
-def playlist_filename_number_and_suffix(file_name: str) -> tuple[int, str] | None:
-    name = Path(str(file_name or "")).name
-    match = re.match(r"^(\d{1,6})__(.+\.playlist)$", name, flags=re.IGNORECASE)
-    if match is None:
-        return None
-    return int(match.group(1)), match.group(2)
-
-
-def build_playlist_reorder_plan(
-    original_names: list[str] | tuple[str, ...],
-    ordered_names: list[str] | tuple[str, ...],
-    *,
-    compact: bool = False,
-) -> list[PlaylistRenameAction]:
-    """Assign existing numeric slots to playlists in a new visual order."""
-    original = list(original_names)
-    ordered = list(ordered_names)
-    if len(original) != len(set(original)) or len(ordered) != len(set(ordered)):
-        raise ValueError("Quest playlist filenames must be unique.")
-    if len(original) != len(ordered) or set(original) != set(ordered):
-        raise ValueError("The reordered playlist list must contain every original file exactly once.")
-
-    parsed: dict[str, tuple[int, str]] = {}
-    invalid: list[str] = []
-    for name in original:
-        details = playlist_filename_number_and_suffix(name)
-        if details is None:
-            invalid.append(name)
-        else:
-            parsed[name] = details
-    if invalid:
-        preview = ", ".join(invalid[:3])
-        more = f" and {len(invalid) - 3} more" if len(invalid) > 3 else ""
-        raise ValueError(f"These playlists do not have a valid numbered prefix: {preview}{more}.")
-
-    existing_slots = sorted(number for number, _suffix in parsed.values())
-    if len(existing_slots) != len(set(existing_slots)):
-        raise ValueError("Two or more Quest playlists use the same playlist number.")
-    assigned_slots = list(range(1, len(ordered) + 1)) if compact else existing_slots
-    return [
-        PlaylistRenameAction(
-            source_name=name,
-            target_name=f"{assigned_number:06d}__{parsed[name][1]}",
-            assigned_number=assigned_number,
-        )
-        for name, assigned_number in zip(ordered, assigned_slots)
-    ]
-
-
-def normalized_song_hash(song_hash: str) -> str:
-    return str(song_hash or "").strip().casefold()
 
 
 def parse_duration_to_seconds(value: Any, default: float = 0.0) -> float:
@@ -847,44 +483,6 @@ def parse_iso_datetime_to_timestamp(value: Any) -> int:
         return int(dt.timestamp())
     except ValueError:
         return 0
-
-
-def parse_date_filter_range(start_text: str, end_text: str) -> tuple[int | None, int | None]:
-    """Parse an inclusive local-date interval used by the beatmap browser."""
-
-    def parse_bound(text: str, *, end_of_day: bool) -> int | None:
-        value = text.strip()
-        if not value:
-            return None
-        try:
-            parsed = datetime.strptime(value, "%Y-%m-%d")
-        except ValueError as err:
-            raise ValueError("Use date format YYYY-MM-DD.") from err
-        timestamp = int(parsed.timestamp())
-        return timestamp + 86_399 if end_of_day else timestamp
-
-    start = parse_bound(start_text, end_of_day=False)
-    end = parse_bound(end_text, end_of_day=True)
-    if start is not None and end is not None and start > end:
-        raise ValueError("The From date must not be later than the To date.")
-    return start, end
-
-
-def default_beatmap_date_filter_range(now: datetime | None = None) -> tuple[str, str]:
-    current = now if now is not None else datetime.now()
-    return EARLIEST_BEATMAP_DATE, current.strftime("%Y-%m-%d")
-
-
-def timestamp_matches_date_filter(timestamp: float, start: int | None, end: int | None) -> bool:
-    if start is None and end is None:
-        return True
-    if timestamp <= 0:
-        return False
-    if start is not None and timestamp < start:
-        return False
-    if end is not None and timestamp > end:
-        return False
-    return True
 
 
 def normalize_playlist_path(path: str) -> str:
@@ -1074,278 +672,29 @@ def pick_record_by_hash(payload: Any, song_hash: str) -> dict[str, Any]:
     return {}
 
 
-def validated_http_url(url: str) -> str:
-    value = str(url or "").strip()
-    parsed = urlparse(value)
-    if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
-        raise ValueError(f"Unsupported remote URL: {value or '(empty)'}")
-    if parsed.username is not None or parsed.password is not None:
-        raise ValueError("Remote URLs containing embedded credentials are not allowed.")
-    return value
-
-
-def read_limited_response(response: Any, max_bytes: int) -> bytes:
-    content_length = force_int(response.headers.get("Content-Length"), 0)
-    if content_length > max_bytes:
-        raise RuntimeError(f"Remote response is too large ({content_length} bytes; limit is {max_bytes}).")
-    data = response.read(max_bytes + 1)
-    if len(data) > max_bytes:
-        raise RuntimeError(f"Remote response exceeded the {max_bytes}-byte safety limit.")
-    return data
-
-
 def fetch_json(url: str) -> Any:
-    req = Request(validated_http_url(url), headers=DEFAULT_HEADERS)
+    req = Request(url, headers=DEFAULT_HEADERS)
     with urlopen(req, timeout=20) as response:
-        body = read_limited_response(response, MAX_JSON_RESPONSE_BYTES).decode("utf-8")
+        body = response.read().decode("utf-8")
     return json.loads(body)
 
 
-def synthriderz_url(path_or_url: Any) -> str:
-    value = str(path_or_url or "").strip()
-    absolute = urljoin("https://synthriderz.com", value)
-    parsed = urlparse(validated_http_url(absolute))
-    if (
-        parsed.scheme.casefold() != "https"
-        or parsed.hostname is None
-        or parsed.hostname.casefold() != "synthriderz.com"
-        or parsed.port not in {None, 443}
-    ):
-        raise ValueError("Community playlist resources must come from synthriderz.com.")
-    return absolute
-
-
-def parse_community_playlist_entry(record: dict[str, Any]) -> CommunityPlaylistEntry | None:
-    playlist_id = force_int(record.get("id"), 0)
-    if playlist_id <= 0:
-        return None
-    user = record.get("user")
-    creator = ""
-    if isinstance(user, dict):
-        creator = str(user.get("username") or user.get("name") or "").strip()
-    published_sort = parse_iso_datetime_to_timestamp(
-        record.get("published_at") or record.get("updated_at") or record.get("created_at")
-    )
-    published_text = (
-        datetime.fromtimestamp(published_sort).strftime("%Y-%m-%d")
-        if published_sort > 0
-        else ""
-    )
-    cover_version = max(0, force_int(record.get("cover_version"), 0))
-    cover_path = record.get("cover_url") or f"/api/playlists/{playlist_id}/cover"
-    download_path = record.get("download_url") or f"/api/playlists/{playlist_id}/download"
-    return CommunityPlaylistEntry(
-        playlist_id=str(playlist_id),
-        name=str(record.get("name") or "Untitled playlist").strip()[:240],
-        description=str(record.get("description") or "").strip()[:2000],
-        creator=creator[:240],
-        published_text=published_text,
-        published_sort=published_sort,
-        download_count=max(0, force_int(record.get("download_count"), 0)),
-        vote_score=force_int(record.get("vote_diff"), 0),
-        cover_version=cover_version,
-        cover_url=synthriderz_url(f"{cover_path}?v={cover_version}&size=500"),
-        download_url=synthriderz_url(download_path),
-        record=record,
-    )
-
-
-def fetch_community_playlists() -> list[CommunityPlaylistEntry]:
-    payload = fetch_json("https://synthriderz.com/api/playlists?page=1")
-    if not isinstance(payload, list):
-        raise RuntimeError("Community playlist response was not a JSON list.")
-    if len(payload) > MAX_COMMUNITY_PLAYLIST_ITEMS:
-        raise RuntimeError(
-            f"Community playlist response contained too many entries ({len(payload)})."
-        )
-    entries: list[CommunityPlaylistEntry] = []
-    for item in payload:
-        if not isinstance(item, dict):
-            continue
-        parsed = parse_community_playlist_entry(item)
-        if parsed is not None:
-            entries.append(parsed)
-    return entries
-
-
-def curated_playlist_query(category: str) -> list[tuple[str, str | int]]:
-    common: list[tuple[str, str | int]] = [
-        ("select", COMMUNITY_PLAYLIST_SELECT_FIELDS),
-        ("limit", 48),
-        ("page", 1),
-        ("sort", "published_at,DESC"),
-    ]
-    filters: dict[str, Any]
-    if category == "Getting Started":
-        common.extend([("join", "tags"), ("join", "tags.tag")])
-        filters = {"tags.tag.slug": "getting-started"}
-    elif category == "Events":
-        common.extend([("join", "tags"), ("join", "tags.tag")])
-        filters = {"tags.tag.slug": "synthriderz-events"}
-    elif category == "Staff Picks":
-        common.extend([("join", "tags"), ("join", "tags.tag")])
-        filters = {"tags.tag.slug": "staff-picks"}
-    elif category == "Synth Riders Official":
-        filters = {"auto_playlist_id": {"$startsL": "official-"}}
-    elif category == "Star Mappers":
-        filters = {"auto_playlist_id": {"$startsL": "star-mapper-"}}
-    else:
-        raise ValueError(f"Unknown curated playlist category: {category}")
-    common.append(("s", json.dumps(filters, separators=(",", ":"))))
-    return common
-
-
-def fetch_curated_community_playlists() -> list[CommunityPlaylistEntry]:
-    entries: list[CommunityPlaylistEntry] = []
-    for category in CURATED_PLAYLIST_CATEGORIES:
-        query = urlencode(curated_playlist_query(category))
-        payload = fetch_json(f"https://synthriderz.com/api/playlists?{query}")
-        raw_items = payload.get("data") if isinstance(payload, dict) else payload
-        if not isinstance(raw_items, list):
-            raise RuntimeError(f"Curated playlist response for {category} was not a JSON list.")
-        if len(raw_items) > 48:
-            raise RuntimeError(f"Curated playlist response for {category} exceeded the expected limit.")
-        for item in raw_items:
-            if not isinstance(item, dict):
-                continue
-            parsed = parse_community_playlist_entry(item)
-            if parsed is None:
-                continue
-            parsed.curated_categories = (category,)
-            parsed.in_browse_all = False
-            entries.append(parsed)
-    return entries
-
-
-def merge_community_playlist_entries(
-    browse_entries: list[CommunityPlaylistEntry],
-    curated_entries: list[CommunityPlaylistEntry],
-) -> list[CommunityPlaylistEntry]:
-    merged: dict[str, CommunityPlaylistEntry] = {}
-    order: list[str] = []
-    for incoming in [*browse_entries, *curated_entries]:
-        existing = merged.get(incoming.playlist_id)
-        if existing is None:
-            merged[incoming.playlist_id] = incoming
-            order.append(incoming.playlist_id)
-            continue
-        existing.in_browse_all = existing.in_browse_all or incoming.in_browse_all
-        existing.curated_categories = tuple(
-            dict.fromkeys([*existing.curated_categories, *incoming.curated_categories])
-        )
-    return [merged[playlist_id] for playlist_id in order]
-
-
-def community_playlist_matches_view(
-    entry: CommunityPlaylistEntry,
-    view: str,
-    curated_category: str,
-) -> bool:
-    if view == "Curated":
-        if curated_category == "All curated":
-            return bool(entry.curated_categories)
-        return curated_category in entry.curated_categories
-    return entry.in_browse_all
-
-
-def fetch_community_playlist_document(
-    entry: CommunityPlaylistEntry,
-) -> tuple[dict[str, Any], bytes]:
-    expected_url = synthriderz_url(f"/api/playlists/{int(entry.playlist_id)}/download")
-    requested_url = synthriderz_url(entry.download_url)
-    if requested_url != expected_url:
-        raise RuntimeError("Unexpected community playlist download URL.")
-    request = Request(requested_url, headers=DEFAULT_HEADERS)
-    with urlopen(request, timeout=30) as response:
-        raw = read_limited_response(response, MAX_JSON_RESPONSE_BYTES)
-    try:
-        payload = json.loads(raw.decode("utf-8-sig"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as err:
-        raise RuntimeError("Downloaded community playlist was not valid UTF-8 JSON.") from err
-    if not isinstance(payload, dict):
-        raise RuntimeError("Downloaded community playlist was not a JSON object.")
-    songs = payload.get("dataString")
-    if not isinstance(songs, list):
-        raise RuntimeError("Downloaded community playlist did not contain a song list.")
-    if len(songs) > MAX_COMMUNITY_PLAYLIST_SONGS:
-        raise RuntimeError(f"Community playlist contained too many songs ({len(songs)}).")
-    return payload, raw
-
-
-def community_playlist_cover_cache_dir() -> Path:
-    return Path.home() / ".sr_playlist_forge_playlist_covers"
-
-
-def community_playlist_cover_cache_path(entry: CommunityPlaylistEntry) -> Path:
-    return community_playlist_cover_cache_dir() / (
-        f"{entry.playlist_id}-v{entry.cover_version}.img"
-    )
-
-
 def fetch_text(url: str) -> str:
-    req = Request(validated_http_url(url), headers=DEFAULT_HEADERS)
+    req = Request(url, headers=DEFAULT_HEADERS)
     with urlopen(req, timeout=20) as response:
-        return read_limited_response(response, MAX_TEXT_RESPONSE_BYTES).decode("utf-8", errors="replace")
+        return response.read().decode("utf-8", errors="replace")
 
 
-def fetch_bytes(url: str, max_bytes: int = MAX_COVER_RESPONSE_BYTES) -> bytes:
-    req = Request(validated_http_url(url), headers=DEFAULT_HEADERS)
+def fetch_bytes(url: str) -> bytes:
+    req = Request(url, headers=DEFAULT_HEADERS)
     with urlopen(req, timeout=20) as response:
-        return read_limited_response(response, max_bytes)
-
-
-def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
-    target = path.resolve()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding=encoding,
-            newline="",
-            dir=target.parent,
-            prefix=f".{target.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temp_path = Path(handle.name)
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_path, target)
-    except Exception:
-        if temp_path is not None:
-            temp_path.unlink(missing_ok=True)
-        raise
-
-
-def atomic_write_bytes(path: Path, data: bytes) -> None:
-    target = path.resolve()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="wb",
-            dir=target.parent,
-            prefix=f".{target.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temp_path = Path(handle.name)
-            handle.write(data)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_path, target)
-    except Exception:
-        if temp_path is not None:
-            temp_path.unlink(missing_ok=True)
-        raise
+        return response.read()
 
 
 def safe_after(widget: tk.Misc, callback: Callable[[], None]) -> None:
     try:
         widget.after(0, callback)
-    except (tk.TclError, RuntimeError):
+    except tk.TclError:
         pass
 
 
@@ -1366,12 +715,6 @@ def app_support_dir() -> Path:
         support_dir = Path.home() / ".sr_playlist_forge"
     support_dir.mkdir(parents=True, exist_ok=True)
     return support_dir
-
-
-def playlist_visual_cache_dir() -> Path:
-    cache_dir = app_support_dir() / "playlist-visuals"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
 
 
 def error_log_path() -> Path:
@@ -1494,9 +837,8 @@ def write_exception_log(title: str, exc_info: tuple[type[BaseException], BaseExc
         lines.append("No traceback available.")
     lines.append("")
     log_path = error_log_path()
-    with EXCEPTION_LOG_LOCK:
-        with log_path.open("a", encoding="utf-8") as handle:
-            handle.write("\n".join(lines))
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write("\n".join(lines))
     return log_path
 
 
@@ -1523,12 +865,14 @@ def install_global_exception_hooks() -> None:
     def _threading_hook(args: threading.ExceptHookArgs) -> None:
         if issubclass(args.exc_type, KeyboardInterrupt):
             return
-        # Tk dialogs must only be created on the UI thread. Background workers
-        # report expected failures through their queues; this hook is the final
-        # logging fallback for an otherwise unhandled worker crash.
-        write_exception_log(
+        log_path = write_exception_log(
             f"Unhandled thread exception in {args.thread.name if args.thread else 'unknown thread'}",
             (args.exc_type, args.exc_value, args.exc_traceback),
+        )
+        show_fatal_error_dialog(
+            "SR Playlist Forge Error",
+            "A background task crashed.\n\n"
+            f"Details were written to:\n{log_path}",
         )
 
     threading.excepthook = _threading_hook
@@ -1696,23 +1040,17 @@ def extract_song_identity_from_synth_bytes(data: bytes, file_name: str) -> Heads
     if zipfile.is_zipfile(io.BytesIO(data)):
         try:
             with zipfile.ZipFile(io.BytesIO(data)) as archive:
-                metadata_bytes_read = 0
-                for member_index, member in enumerate(archive.infolist()):
-                    if member_index >= MAX_SYNTH_METADATA_MEMBERS:
-                        break
+                for member in archive.infolist():
                     if member.is_dir():
                         continue
                     if member.file_size <= 0 or member.file_size > 3 * 1024 * 1024:
                         continue
-                    if metadata_bytes_read + member.file_size > MAX_SYNTH_METADATA_BYTES:
-                        break
                     if not member.filename.lower().endswith((".json", ".txt", ".meta", ".dat", ".info")):
                         continue
                     try:
                         member_data = archive.read(member)
                     except Exception:
                         continue
-                    metadata_bytes_read += len(member_data)
                     text = decode_text_from_bytes(member_data)
                     try:
                         payload = json.loads(text)
@@ -1821,12 +1159,6 @@ def adb_delete_file(adb_path: str, remote_path: str) -> None:
         raise RuntimeError(adb_error_text(result, f"Failed to delete {remote_path}."))
 
 
-def adb_move_file(adb_path: str, source_path: str, target_path: str) -> None:
-    result = run_adb_command(adb_path, ["shell", "mv", source_path, target_path], timeout=60)
-    if result.returncode != 0:
-        raise RuntimeError(adb_error_text(result, f"Failed to rename {Path(source_path).name}."))
-
-
 def adb_read_text_file(adb_path: str, remote_path: str) -> str:
     result = run_adb_command(adb_path, ["shell", "cat", remote_path], timeout=60)
     if result.returncode != 0:
@@ -1916,12 +1248,8 @@ def load_cached_beatmap_hashes_by_title_artist() -> dict[str, str]:
     return hashes
 
 
-def collect_playlist_song_references_from_remote(
-    adb_path: str,
-    playlist_dir: str,
-) -> tuple[set[str], list[SongEntry]]:
+def collect_playlist_hashes_from_remote(adb_path: str, playlist_dir: str) -> set[str]:
     hashes: set[str] = set()
-    songs: list[SongEntry] = []
     names = list_remote_files(adb_path, playlist_dir)
     for name in names:
         if not name.lower().endswith(".playlist"):
@@ -1932,19 +1260,15 @@ def collect_playlist_song_references_from_remote(
             payload = json.loads(raw)
         except Exception:
             continue
-        if not isinstance(payload, dict):
+        items = payload.get("dataString")
+        if not isinstance(items, list):
             continue
-        for item in playlist_song_items(payload):
-            song = song_entry_from_playlist_item(item)
-            if song.hash:
-                song.hash = song.hash.strip().lower()
-                hashes.add(song.hash)
-            songs.append(song)
-    return hashes, songs
-
-
-def collect_playlist_hashes_from_remote(adb_path: str, playlist_dir: str) -> set[str]:
-    hashes, _songs = collect_playlist_song_references_from_remote(adb_path, playlist_dir)
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            song_hash = item.get("hash")
+            if isinstance(song_hash, str) and song_hash.strip():
+                hashes.add(song_hash.strip().lower())
     return hashes
 
 
@@ -1956,14 +1280,32 @@ def collect_headset_song_hashes(adb_path: str, songs_dir: str) -> set[str]:
 def load_remote_playlist_song_entries(adb_path: str, playlist_path: str) -> list[SongEntry]:
     raw = adb_read_text_file(adb_path, playlist_path)
     payload = json.loads(raw)
-    if not isinstance(payload, dict):
+    items = payload.get("dataString")
+    if not isinstance(items, list):
         return []
 
     songs: list[SongEntry] = []
-    for item in playlist_song_items(payload):
-        song = song_entry_from_playlist_item(item)
-        if song.hash:
-            songs.append(song)
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        song_hash = str(item.get("hash", "")).strip()
+        if not song_hash:
+            continue
+        songs.append(
+            SongEntry(
+                hash=song_hash,
+                name=str(item.get("name", "")),
+                author=str(item.get("author", "")),
+                beatmapper=str(item.get("beatmapper", "")),
+                difficulty=force_int(item.get("difficulty"), 0),
+                difficultyText=str(item.get("difficultyText", item.get("difficulty", ""))),
+                trackDuration=force_float(item.get("trackDuration"), 0.0),
+                addedTime=force_int(item.get("addedTime"), int(time.time())),
+                beatmapId=str(item.get("beatmapId", "")),
+                sourceUrl=str(item.get("sourceUrl", "")),
+                downloadUrl=str(item.get("downloadUrl", "")),
+            )
+        )
     return songs
 
 
@@ -2083,7 +1425,7 @@ def lookup_beatmap_record_by_hash(song_hash: str) -> dict[str, Any] | None:
             continue
 
     page = 1
-    while page <= MAX_BEATMAP_FALLBACK_PAGES:
+    while page <= 2000:
         try:
             payload = fetch_json(f"https://synthriderz.com/api/beatmaps?page={page}")
             if not isinstance(payload, dict):
@@ -2124,7 +1466,7 @@ def lookup_beatmap_record_by_title_artist(title: str, artist: str) -> dict[str, 
         return cached
 
     page = 1
-    while page <= MAX_BEATMAP_FALLBACK_PAGES:
+    while page <= 2000:
         try:
             payload = fetch_json(f"https://synthriderz.com/api/beatmaps?page={page}")
             if not isinstance(payload, dict):
@@ -2224,6 +1566,7 @@ def build_headset_song_index_fast(
             hashes.add(resolved_hash)
         identities[name] = identity
     return hashes, filenames, identities
+    return False
 
 
 def resolve_song_identity_hash(
@@ -2253,7 +1596,7 @@ def resolve_song_identity_hash(
 
 
 def read_headset_song_identity(adb_path: str, songs_dir: str, file_name: str) -> HeadsetSongIdentity:
-    remote_path = join_remote_path(songs_dir, file_name)
+    remote_path = f"{songs_dir.rstrip('/')}/{file_name}"
     cached = HEADSET_SYNTH_METADATA_CACHE.get(remote_path)
     if cached is not None:
         return HeadsetSongIdentity(**asdict(cached))
@@ -2327,7 +1670,6 @@ def parse_beatmap_list_entry(record: dict[str, Any]) -> BeatmapListEntry | None:
         difficulty_text=difficulty_text,
         download_count=force_int(record.get("download_count"), 0),
         record=record,
-        upvote_count=force_int(record.get("upvote_count"), 0),
     )
 
 
@@ -2379,10 +1721,7 @@ def beatmap_cover_cache_dir() -> Path:
 
 
 def beatmap_cover_cache_path(beatmap_id: str) -> Path:
-    safe_id = re.sub(r"[^A-Za-z0-9_-]+", "_", str(beatmap_id or "").strip())[:80]
-    if not safe_id:
-        raise ValueError("Beatmap ID is required for cover caching.")
-    return beatmap_cover_cache_dir() / f"{safe_id}.img"
+    return beatmap_cover_cache_dir() / f"{beatmap_id}.img"
 
 
 def cover_url_from_record(record: dict[str, Any], beatmap_id: str) -> str:
@@ -2393,21 +1732,9 @@ def cover_url_from_record(record: dict[str, Any], beatmap_id: str) -> str:
 
 
 def load_cached_beatmaps() -> list[BeatmapListEntry]:
-    global BEATMAP_LIST_MEMORY_CACHE
     path = beatmap_cache_file_path()
     if not path.exists():
         return []
-    try:
-        stat = path.stat()
-        signature = (stat.st_mtime_ns, stat.st_size)
-    except OSError:
-        return []
-
-    with BEATMAP_LIST_CACHE_LOCK:
-        cached = BEATMAP_LIST_MEMORY_CACHE
-        if cached is not None and cached[0] == signature:
-            return list(cached[1])
-
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
@@ -2426,24 +1753,17 @@ def load_cached_beatmaps() -> list[BeatmapListEntry]:
         parsed = parse_beatmap_list_entry(item)
         if parsed is not None:
             rows.append(parsed)
-    with BEATMAP_LIST_CACHE_LOCK:
-        BEATMAP_LIST_MEMORY_CACHE = (signature, tuple(rows))
     return rows
 
 
 def save_cached_beatmaps(rows: list[BeatmapListEntry]) -> None:
-    global BEATMAP_LIST_MEMORY_CACHE
     payload = {
         "savedAt": int(time.time()),
         "count": len(rows),
         "items": [row.record for row in rows],
     }
     try:
-        path = beatmap_cache_file_path()
-        atomic_write_text(path, json.dumps(payload, ensure_ascii=False))
-        stat = path.stat()
-        with BEATMAP_LIST_CACHE_LOCK:
-            BEATMAP_LIST_MEMORY_CACHE = ((stat.st_mtime_ns, stat.st_size), tuple(rows))
+        beatmap_cache_file_path().write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     except Exception:
         pass
 
@@ -2621,74 +1941,6 @@ def extract_filename_from_headers(content_disposition: str | None) -> str:
     return ""
 
 
-def resolve_cached_song_identity_hash(
-    identity: HeadsetSongIdentity,
-    hash_by_id: dict[str, str],
-    hash_by_title_artist: dict[str, str],
-) -> str:
-    """Resolve a song hash without network or headset access."""
-    if identity.song_hash:
-        return identity.song_hash.strip().lower()
-    if identity.beatmap_id:
-        song_hash = hash_by_id.get(identity.beatmap_id)
-        if song_hash:
-            return song_hash.strip().lower()
-    if identity.title:
-        key = f"{normalize_text(identity.title)}::{normalize_text(identity.artist)}"
-        song_hash = hash_by_title_artist.get(key)
-        if song_hash:
-            return song_hash.strip().lower()
-    return ""
-
-
-def classify_known_headset_song_statuses(
-    file_names: list[str],
-    file_details: dict[str, HeadsetSongIdentity],
-    playlist_hashes: set[str],
-    playlist_songs: list[SongEntry],
-    hash_by_id: dict[str, str],
-    hash_by_title_artist: dict[str, str],
-) -> tuple[dict[str, str], list[str]]:
-    """Classify everything already known and return only files requiring Quest reads."""
-    statuses: dict[str, str] = {}
-    unresolved: list[str] = []
-    normalized_playlist_hashes = {
-        song_hash.strip().lower()
-        for song_hash in playlist_hashes
-        if song_hash.strip()
-    }
-    for name in file_names:
-        identity = file_details.get(
-            name,
-            HeadsetSongIdentity(
-                file_name=name,
-                beatmap_id=extract_beatmap_id_from_filename(name) or "",
-                source="filename",
-            ),
-        )
-        song_hash = resolve_cached_song_identity_hash(
-            identity,
-            hash_by_id,
-            hash_by_title_artist,
-        )
-        if song_hash:
-            statuses[name] = (
-                "In playlist"
-                if song_hash in normalized_playlist_hashes
-                else "Possibly orphan"
-            )
-            continue
-        if any(
-            headset_identity_matches_song(identity, song)
-            or headset_filename_matches_song(name, song)
-            for song in playlist_songs
-        ):
-            statuses[name] = "In playlist"
-            continue
-        unresolved.append(name)
-    return statuses, unresolved
-
-
 def pick_download_url_from_json(payload: Any) -> str | None:
     records = iter_dict_values(payload)
     for rec in records:
@@ -2720,22 +1972,11 @@ def download_song_to_dir(
     cancel_cb: Callable[[], bool] | None = None,
 ) -> tuple[Path, str]:
     errors: list[str] = []
-    pending_urls = get_download_url_candidates(song)
-    if not pending_urls:
+    url_candidates = get_download_url_candidates(song)
+    if not url_candidates:
         raise RuntimeError("No download URL candidates available for this song.")
 
-    attempted_urls: set[str] = set()
-    while pending_urls and len(attempted_urls) < MAX_DOWNLOAD_URL_ATTEMPTS:
-        candidate = pending_urls.pop(0)
-        try:
-            candidate = validated_http_url(candidate)
-        except ValueError as err:
-            errors.append(str(err))
-            continue
-        if candidate in attempted_urls:
-            continue
-        attempted_urls.add(candidate)
-
+    for candidate in url_candidates:
         if cancel_cb and cancel_cb():
             raise DownloadCancelled("Download cancelled by user.")
         try:
@@ -2746,11 +1987,11 @@ def download_song_to_dir(
                 final_url = response.geturl()
 
                 if "application/json" in content_type:
-                    raw = read_limited_response(response, MAX_JSON_RESPONSE_BYTES)
+                    raw = response.read()
                     payload = json.loads(raw.decode("utf-8"))
                     nested_url = pick_download_url_from_json(payload)
-                    if nested_url and nested_url not in attempted_urls:
-                        pending_urls.append(nested_url)
+                    if nested_url and nested_url != candidate:
+                        url_candidates.append(nested_url)
                         continue
                     errors.append(f"{candidate}: returned JSON without a download URL")
                     continue
@@ -2767,10 +2008,6 @@ def download_song_to_dir(
                 total_header = response.headers.get("Content-Length")
                 if total_header:
                     total_size = force_int(total_header, 0) or None
-                if total_size is not None and total_size > MAX_SONG_DOWNLOAD_BYTES:
-                    raise RuntimeError(
-                        f"Download is too large ({total_size} bytes; limit is {MAX_SONG_DOWNLOAD_BYTES})."
-                    )
 
                 written = 0
                 chunk_size = 256 * 1024
@@ -2784,10 +2021,6 @@ def download_song_to_dir(
                                 break
                             f.write(chunk)
                             written += len(chunk)
-                            if written > MAX_SONG_DOWNLOAD_BYTES:
-                                raise RuntimeError(
-                                    f"Download exceeded the {MAX_SONG_DOWNLOAD_BYTES}-byte safety limit."
-                                )
                             if progress_cb:
                                 progress_cb(written, total_size, filename)
                 except Exception:
@@ -2804,8 +2037,6 @@ def download_song_to_dir(
             errors.append(f"{candidate}: {err}")
             continue
 
-    if pending_urls:
-        errors.append(f"Stopped after {MAX_DOWNLOAD_URL_ATTEMPTS} unique download URL attempts.")
     raise RuntimeError("\n".join(errors))
 
 
@@ -2834,13 +2065,9 @@ def fetch_song_from_url(url_text: str) -> SongEntry:
             continue
 
     if payload is None:
-        cached_record = find_cached_beatmap_record_by_id(beatmap_id)
-        if cached_record:
-            return parse_song_from_record(cached_record, beatmap_id)
-
         # Fallback: scan paged list endpoint for this beatmap ID.
         page = 1
-        while page <= MAX_BEATMAP_FALLBACK_PAGES:
+        while page <= 2000:
             try:
                 page_payload = fetch_json(f"https://synthriderz.com/api/beatmaps?page={page}")
                 if not isinstance(page_payload, dict):
@@ -2994,12 +2221,10 @@ class HoverTooltip:
             tw,
             text=tip_text,
             justify="left",
-            foreground="#F5F7FB",
-            background="#1B202C",
+            foreground="#111111",
+            background="#fff8bf",
             relief="solid",
             borderwidth=1,
-            highlightbackground="#3A4254",
-            highlightthickness=1,
             padx=8,
             pady=6,
             wraplength=360,
@@ -3039,116 +2264,6 @@ class QuestTransferDialog(BASE_DIALOG_CLASS):
         self.focus()
 
     def _build_ui(self) -> None:
-        if HAS_CUSTOMTKINTER and ctk is not None:
-            self._build_ctk_ui()
-            return
-        self._build_ttk_ui()
-
-    def _build_ctk_ui(self) -> None:
-        assert ctk is not None
-        bg, surface = "#0A0C10", "#151922"
-        surface_raised, surface_soft = "#1B202C", "#11151D"
-        border, text, muted = "#282E3D", "#F5F7FB", "#969EAF"
-        accent, accent_hover = "#8B5CF6", "#7C3AED"
-
-        self.geometry("760x660")
-        self.minsize(700, 620)
-        self.configure(fg_color=bg)
-        root = ctk.CTkFrame(self, fg_color=bg)
-        root.pack(fill="both", expand=True, padx=24, pady=22)
-        ctk.CTkLabel(
-            root, text="SEND TO QUEST", text_color=muted, font=ctk.CTkFont(size=11, weight="bold")
-        ).pack(anchor="w")
-        ctk.CTkLabel(
-            root, text="Choose what to send", text_color=text, font=ctk.CTkFont(size=24, weight="bold")
-        ).pack(anchor="w", pady=(3, 2))
-        ctk.CTkLabel(
-            root,
-            text="Set the headset folders and decide how existing files should be handled.",
-            text_color=muted,
-            font=ctk.CTkFont(size=13),
-        ).pack(anchor="w", pady=(0, 16))
-
-        paths = ctk.CTkFrame(root, fg_color=surface, corner_radius=14, border_width=1, border_color=border)
-        paths.pack(fill="x", pady=(0, 12))
-        paths.grid_columnconfigure(0, weight=1)
-        for row, (label, variable) in enumerate(
-            (("SONGS FOLDER", self.song_dir_var), ("PLAYLIST FOLDER", self.playlist_dir_var))
-        ):
-            ctk.CTkLabel(
-                paths, text=label, text_color=muted, font=ctk.CTkFont(size=10, weight="bold")
-            ).grid(row=row * 2, column=0, sticky="w", padx=16, pady=(14 if row == 0 else 10, 4))
-            ctk.CTkEntry(
-                paths,
-                textvariable=variable,
-                height=38,
-                fg_color=surface_soft,
-                border_color=border,
-                text_color=text,
-            ).grid(row=row * 2 + 1, column=0, sticky="ew", padx=16, pady=(0, 14))
-
-        options = ctk.CTkFrame(root, fg_color="transparent")
-        options.pack(fill="both", expand=True)
-        options.grid_columnconfigure((0, 1), weight=1, uniform="option")
-        transfer = ctk.CTkFrame(options, fg_color=surface, corner_radius=14, border_width=1, border_color=border)
-        transfer.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
-        ctk.CTkLabel(
-            transfer, text="TRANSFER", text_color=muted, font=ctk.CTkFont(size=10, weight="bold")
-        ).pack(anchor="w", padx=16, pady=(14, 8))
-        for label, value in (
-            ("Songs and playlist", "both"),
-            ("Songs only", "songs"),
-            ("Playlist only", "playlist"),
-        ):
-            ctk.CTkRadioButton(
-                transfer,
-                text=label,
-                variable=self.transfer_mode_var,
-                value=value,
-                fg_color=accent,
-                hover_color=accent_hover,
-                border_color=muted,
-                text_color=text,
-            ).pack(anchor="w", padx=16, pady=8)
-
-        duplicates = ctk.CTkFrame(options, fg_color=surface, corner_radius=14, border_width=1, border_color=border)
-        duplicates.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
-        ctk.CTkLabel(
-            duplicates,
-            text="DUPLICATES ON HEADSET",
-            text_color=muted,
-            font=ctk.CTkFont(size=10, weight="bold"),
-        ).pack(anchor="w", padx=16, pady=(14, 8))
-        for label, value in (("Skip existing files", "skip"), ("Overwrite existing files", "overwrite")):
-            ctk.CTkRadioButton(
-                duplicates,
-                text=label,
-                variable=self.duplicate_mode_var,
-                value=value,
-                fg_color=accent,
-                hover_color=accent_hover,
-                border_color=muted,
-                text_color=text,
-            ).pack(anchor="w", padx=16, pady=8)
-
-        buttons = ctk.CTkFrame(root, fg_color="transparent")
-        buttons.pack(fill="x", pady=(16, 0))
-        ctk.CTkButton(
-            buttons, text="Cancel", command=self.destroy, width=120, height=40,
-            fg_color=surface_raised, hover_color=border, text_color=text,
-        ).pack(side="right")
-        ctk.CTkButton(
-            buttons,
-            text="Start transfer  →",
-            command=self.on_confirm,
-            width=170,
-            height=40,
-            fg_color=accent,
-            hover_color=accent_hover,
-            font=ctk.CTkFont(weight="bold"),
-        ).pack(side="right", padx=(0, 8))
-
-    def _build_ttk_ui(self) -> None:
         root = ttk.Frame(self, padding=12)
         root.pack(fill="both", expand=True)
 
@@ -3211,14 +2326,6 @@ class QuestTransferDialog(BASE_DIALOG_CLASS):
         self.destroy()
 
 
-def deletion_confirmation_message(label: str, count: int) -> str:
-    """Return a compact confirmation that cannot overflow with long filenames."""
-    return (
-        f"Are you sure you want to permanently delete {count} {label} from Quest?\n\n"
-        "This cannot be undone."
-    )
-
-
 class QuestSongManagerDialog(BASE_DIALOG_CLASS):
     def __init__(self, parent: tk.Misc, adb_path: str, songs_dir: str, playlist_dir: str):
         super().__init__(parent)
@@ -3237,7 +2344,6 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
         self.orphan_status: dict[str, str] = {}
         self.file_details: dict[str, HeadsetSongIdentity] = {}
         self.loading = False
-        self.orphan_scan_generation = 0
         self.sort_column = "filename"
         self.sort_desc = False
 
@@ -3284,7 +2390,6 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
         self.tree.column("artist", anchor="w", width=150, stretch=True)
         self.tree.column("mapper", anchor="w", width=150, stretch=True)
         self.tree.column("status", anchor="w", width=160, stretch=False)
-        install_tree_column_width_persistence(self.tree, "quest_songs", columns)
         self.tree.tag_configure("possible_orphan", background="#fef2f2", foreground="#991b1b")
         self.tree.tag_configure("in_playlist", background="#f0fdf4", foreground="#166534")
         self.tree.tag_configure("unknown", background="#fffbeb", foreground="#92400e")
@@ -3320,8 +2425,6 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
     def refresh_files(self) -> None:
         if self.loading:
             return
-        self.orphan_scan_generation += 1
-        self.update_orphan_progress(0, 0, "")
         self.loading = True
         self.status_var.set("Loading headset songs...")
         self.tree.delete(*self.tree.get_children())
@@ -3436,127 +2539,26 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
             self.status_var.set(f"Headset songs: {len(self.files)} | Showing: {visible_count}")
 
     def compute_orphan_status(self) -> None:
-        self.orphan_scan_generation += 1
-        scan_generation = self.orphan_scan_generation
-        files = list(self.files)
-        file_details = {
-            name: HeadsetSongIdentity(**asdict(identity))
-            for name, identity in self.file_details.items()
-        }
-        self.update_orphan_progress(0, max(1, len(files)), "Reading Quest playlists")
+        self.status_var.set("Checking playlist usage...")
 
         def worker() -> None:
             try:
-                playlist_hashes, playlist_songs = collect_playlist_song_references_from_remote(
-                    self.adb_path,
-                    self.playlist_dir,
-                )
+                playlist_hashes = collect_playlist_hashes_from_remote(self.adb_path, self.playlist_dir)
                 hash_by_id = load_cached_beatmap_hashes_by_id()
                 hash_by_title_artist = load_cached_beatmap_hashes_by_title_artist()
-                status_map, unresolved = classify_known_headset_song_statuses(
-                    files,
-                    file_details,
-                    playlist_hashes,
-                    playlist_songs,
-                    hash_by_id,
-                    hash_by_title_artist,
-                )
-                completed = len(files) - len(unresolved)
-                safe_after(
-                    self,
-                    lambda completed=completed: self.publish_orphan_progress(
-                        scan_generation,
-                        completed,
-                        len(files),
-                        "Matched from cache",
-                    ),
-                )
-                for name in unresolved:
+                status_map: dict[str, str] = {}
+                for name in self.files:
                     identity = read_headset_song_identity(self.adb_path, self.songs_dir, name)
-                    file_details[name] = HeadsetSongIdentity(**asdict(identity))
-                    song_hash = resolve_cached_song_identity_hash(
-                        identity,
-                        hash_by_id,
-                        hash_by_title_artist,
-                    )
+                    song_hash = resolve_song_identity_hash(identity, hash_by_id, hash_by_title_artist)
                     if not song_hash:
-                        song_hash = resolve_song_identity_hash(
-                            identity,
-                            hash_by_id,
-                            hash_by_title_artist,
-                        )
-                    if not song_hash:
-                        in_playlist = any(
-                            headset_identity_matches_song(identity, song)
-                            or headset_filename_matches_song(name, song)
-                            for song in playlist_songs
-                        )
-                        status_map[name] = "In playlist" if in_playlist else "Unknown"
-                    else:
-                        identity.song_hash = song_hash
-                        file_details[name] = HeadsetSongIdentity(**asdict(identity))
-                        status_map[name] = (
-                            "In playlist"
-                            if song_hash.lower() in playlist_hashes
-                            else "Possibly orphan"
-                        )
-                    completed += 1
-                    safe_after(
-                        self,
-                        lambda completed=completed: self.publish_orphan_progress(
-                            scan_generation,
-                            completed,
-                            len(files),
-                            "Reading remaining song metadata",
-                        ),
-                    )
-                safe_after(
-                    self,
-                    lambda: self.finish_orphan_scan(
-                        scan_generation,
-                        status_map,
-                        file_details,
-                    ),
-                )
+                        status_map[name] = "Unknown"
+                        continue
+                    status_map[name] = "In playlist" if song_hash.lower() in playlist_hashes else "Possibly orphan"
+                safe_after(self, lambda: self.apply_orphan_status(status_map))
             except Exception as err:  # noqa: BLE001
-                safe_after(
-                    self,
-                    lambda err=err: self.fail_orphan_scan(scan_generation, err),
-                )
+                safe_after(self, lambda err=err: self.status_var.set(f"Usage check failed: {err}"))
 
         threading.Thread(target=worker, daemon=True).start()
-
-    def publish_orphan_progress(
-        self,
-        scan_generation: int,
-        completed: int,
-        total: int,
-        phase: str,
-    ) -> None:
-        if scan_generation != self.orphan_scan_generation:
-            return
-        self.update_orphan_progress(completed, total, phase)
-
-    def update_orphan_progress(self, completed: int, total: int, phase: str) -> None:
-        if total > 0:
-            self.status_var.set(f"{phase}: {completed}/{total}")
-
-    def finish_orphan_scan(
-        self,
-        scan_generation: int,
-        status_map: dict[str, str],
-        file_details: dict[str, HeadsetSongIdentity],
-    ) -> None:
-        if scan_generation != self.orphan_scan_generation:
-            return
-        self.file_details.update(file_details)
-        self.apply_orphan_status(status_map)
-
-    def fail_orphan_scan(self, scan_generation: int, error: Exception) -> None:
-        if scan_generation != self.orphan_scan_generation:
-            return
-        self.update_orphan_progress(0, 0, "")
-        self.status_var.set(f"Usage check failed: {error}")
 
     def apply_orphan_status(self, status_map: dict[str, str]) -> None:
         if not self.winfo_exists() or not self.tree.winfo_exists():
@@ -3680,9 +2682,12 @@ class QuestSongManagerDialog(BASE_DIALOG_CLASS):
 
     def confirm_delete(self, label: str, names: list[str]) -> bool:
         count = len(names)
+        preview = "\n".join(names[:12])
+        if len(names) > 12:
+            preview += f"\n...and {len(names) - 12} more"
         return messagebox.askyesno(
             f"Delete {label.title()}",
-            deletion_confirmation_message(label, count),
+            f"Are you sure you want to delete {count} {label}?\n\n{preview}",
             parent=self,
         )
 
@@ -3748,7 +2753,6 @@ class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
         self.tree.heading("status", text="Status")
         self.tree.column("filename", anchor="w", width=760, stretch=True)
         self.tree.column("status", anchor="w", width=220, stretch=False)
-        install_tree_column_width_persistence(self.tree, "quest_playlists", ("filename", "status"))
         self.tree.tag_configure("ok", background="#f0fdf4", foreground="#166534")
         self.tree.tag_configure("warning", background="#fffbeb", foreground="#92400e")
         self.tree.tag_configure("error", background="#fef2f2", foreground="#991b1b")
@@ -4032,9 +3036,12 @@ class QuestPlaylistManagerDialog(BASE_DIALOG_CLASS):
 
     def confirm_delete(self, label: str, names: list[str]) -> bool:
         count = len(names)
+        preview = "\n".join(names[:12])
+        if len(names) > 12:
+            preview += f"\n...and {len(names) - 12} more"
         return messagebox.askyesno(
             f"Delete {label.title()}",
-            deletion_confirmation_message(label, count),
+            f"Are you sure you want to delete {count} {label}?\n\n{preview}",
             parent=self,
         )
 
@@ -4094,7 +3101,6 @@ class MissingPlaylistSongsDialog(BASE_DIALOG_CLASS):
         self.tree.column("author", width=180, anchor="w")
         self.tree.column("beatmapper", width=180, anchor="w")
         self.tree.column("difficulty", width=90, anchor="w")
-        install_tree_column_width_persistence(self.tree, "missing_playlist_songs", columns)
         yscroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=yscroll.set)
         yscroll.pack(side="right", fill="y")
@@ -4246,17 +3252,12 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         self.minsize(920, 520)
         self.result: list[SongEntry] = []
         self.on_add_songs = on_add_songs
-        self.existing_songs = existing_songs if existing_songs is not None else []
-        self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(self.existing_songs)
-        self.existing_track_identities = playlist_track_identity_set(self.existing_songs)
+        self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(existing_songs or [])
 
         self.filter_var = tk.StringVar(value="")
         self.duration_filter_mode = tk.StringVar(value="Any")
         self.duration_filter_value = tk.StringVar(value="")
         self.duration_filter_value_max = tk.StringVar(value="")
-        default_date_from, default_date_to = default_beatmap_date_filter_range()
-        self.date_filter_from = tk.StringVar(value=default_date_from)
-        self.date_filter_to = tk.StringVar(value=default_date_to)
         self.status_var = tk.StringVar(value="Loading beatmaps...")
         self.page_info_var = tk.StringVar(value="Loading full beatmap list...")
         self.selection_var = tk.StringVar(value="Selected: 0")
@@ -4308,19 +3309,6 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         duration_max_entry.pack(side="left")
         duration_min_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
         duration_max_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
-
-        date_controls = ttk.Frame(root)
-        date_controls.pack(fill="x", pady=(0, 8))
-        ttk.Label(date_controls, text="Uploaded from").pack(side="left", padx=(0, 6))
-        date_from_entry = ttk.Entry(date_controls, textvariable=self.date_filter_from, width=12)
-        date_from_entry.pack(side="left")
-        ttk.Label(date_controls, text="to").pack(side="left", padx=6)
-        date_to_entry = ttk.Entry(date_controls, textvariable=self.date_filter_to, width=12)
-        date_to_entry.pack(side="left")
-        ttk.Label(date_controls, text="(YYYY-MM-DD, inclusive)").pack(side="left", padx=(8, 0))
-        ttk.Button(date_controls, text="Reset Dates", command=self.reset_date_filter).pack(side="left", padx=(10, 0))
-        date_from_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
-        date_to_entry.bind("<KeyRelease>", lambda _event: self.refresh_table())
 
         ttk.Button(controls, text="Refresh New", command=self.sync_latest_rows).pack(side="left", padx=(10, 0))
         ttk.Button(controls, text="Full Refresh", command=self.load_all_rows).pack(side="left", padx=(6, 0))
@@ -4495,29 +3483,23 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         try:
             self.tree.tag_configure("browser_even_row", background=palette["table_even"], foreground=palette["fg"])
             self.tree.tag_configure("browser_odd_row", background=palette["table_odd"], foreground=palette["fg"])
-            self.tree.tag_configure("browser_existing_row", background="#203B35", foreground="#D8FFF5")
-            self.tree.tag_configure("browser_same_song_row", background="#3B321D", foreground="#FFF2C7")
+            self.tree.tag_configure("browser_existing_row", background="#251E3F", foreground=palette["fg"])
         except tk.TclError:
             pass
 
     def row_is_in_current_playlist(self, row: BeatmapListEntry) -> bool:
-        return self.row_playlist_match_kind(row) == "exact"
-
-    def row_playlist_match_kind(self, row: BeatmapListEntry) -> str:
-        return beatmap_playlist_match_kind(
-            row,
-            self.existing_hashes,
-            self.existing_beatmap_ids,
-            self.existing_track_identities,
-        )
+        row_hash = song_hash_from_record(row.record)
+        if row_hash and row_hash in self.existing_hashes:
+            return True
+        return bool(row.beatmap_id and row.beatmap_id in self.existing_beatmap_ids)
 
     def _build_table(self, table_frame: tk.Misc, padx: int = 0, pady: int = 0) -> None:
         self._configure_browser_tree_style()
         palette = self._dialog_palette()
-        columns = ("playlist", "uploaded", "title", "artist", "mapper", "duration", "difficulties", "downloads", "upvotes")
+        columns = ("playlist", "uploaded", "title", "artist", "mapper", "duration", "difficulties", "downloads")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="extended", style="Browser.Treeview")
         headings = {
-            "playlist": "Status",
+            "playlist": "Playlist",
             "uploaded": "Uploaded",
             "title": "Title",
             "artist": "Artist",
@@ -4525,24 +3507,21 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
             "duration": "Duration",
             "difficulties": "Difficulties",
             "downloads": "Downloads",
-            "upvotes": "Upvotes",
         }
         widths = {
-            "playlist": 110,
-            "uploaded": 112,
-            "title": 220,
-            "artist": 150,
-            "mapper": 130,
-            "duration": 72,
-            "difficulties": 170,
-            "downloads": 86,
-            "upvotes": 76,
+            "playlist": 90,
+            "uploaded": 135,
+            "title": 250,
+            "artist": 180,
+            "mapper": 160,
+            "duration": 80,
+            "difficulties": 220,
+            "downloads": 90,
         }
         for col in columns:
             self.tree.heading(col, text=headings[col], command=lambda c=col: self.on_column_click(c))
-            anchor = "e" if col in {"downloads", "upvotes"} else "w"
+            anchor = "e" if col == "downloads" else "w"
             self.tree.column(col, width=widths[col], anchor=anchor)
-        install_tree_column_width_persistence(self.tree, "list_browser", columns)
 
         if HAS_CUSTOMTKINTER and ctk is not None:
             yscroll = ctk.CTkScrollbar(
@@ -4643,7 +3622,10 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         threading.Thread(target=worker, daemon=True).start()
 
     def _queue_progress_update(self, page: int, page_count: int, loaded_count: int) -> None:
-        safe_after(self, lambda: self._apply_progress_update(page, page_count, loaded_count))
+        try:
+            self.after(0, lambda: self._apply_progress_update(page, page_count, loaded_count))
+        except tk.TclError:
+            pass
 
     def _apply_progress_update(self, page: int, page_count: int, loaded_count: int) -> None:
         if not self.can_update_ui():
@@ -4659,7 +3641,10 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         added_count: int = 0,
         total_count: int | None = None,
     ) -> None:
-        safe_after(self, lambda: self._finish_load(rows, err, mode, added_count, total_count))
+        try:
+            self.after(0, lambda: self._finish_load(rows, err, mode, added_count, total_count))
+        except tk.TclError:
+            pass
 
     def _finish_load(
         self,
@@ -4697,12 +3682,6 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         duration_mode = self.duration_filter_mode.get()
         duration_min = self.parse_duration_filter(self.duration_filter_value.get())
         duration_max = self.parse_duration_filter(self.duration_filter_value_max.get())
-        try:
-            date_start, date_end = parse_date_filter_range(self.date_filter_from.get(), self.date_filter_to.get())
-        except ValueError as err:
-            self._visible_rows = []
-            self.set_status_message(str(err))
-            return
 
         for row in self._rows:
             haystack = normalize_text(" ".join([row.title, row.artist, row.mapper, row.difficulty_text]))
@@ -4718,27 +3697,19 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
                 high = max(duration_min, duration_max)
                 if not (low <= row.duration_sort <= high):
                     continue
-            if not timestamp_matches_date_filter(row.uploaded_sort, date_start, date_end):
-                continue
             rows.append(row)
 
         self._visible_rows = sorted(rows, key=self.sort_key, reverse=self.sort_desc)
 
         for visible_index, row in enumerate(self._visible_rows):
-            match_kind = self.row_playlist_match_kind(row)
+            in_playlist = self.row_is_in_current_playlist(row)
             self.tree.insert(
                 "",
                 "end",
                 iid=str(visible_index),
-                tags=(
-                    "browser_existing_row"
-                    if match_kind == "exact"
-                    else "browser_same_song_row"
-                    if match_kind == "track"
-                    else ("browser_even_row" if visible_index % 2 == 0 else "browser_odd_row")
-                ,),
+                tags=("browser_existing_row" if in_playlist else ("browser_even_row" if visible_index % 2 == 0 else "browser_odd_row"),),
                 values=(
-                    "✓ In playlist" if match_kind == "exact" else "≈ Song in playlist" if match_kind == "track" else "",
+                    "In list" if in_playlist else "",
                     row.uploaded_text,
                     row.title,
                     row.artist,
@@ -4746,7 +3717,6 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
                     row.duration_text,
                     row.difficulty_text,
                     row.download_count,
-                    row.upvote_count,
                 ),
             )
 
@@ -4763,7 +3733,7 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         if self.sort_column == "uploaded":
             return row.uploaded_sort
         if self.sort_column == "playlist":
-            return {"": 0, "track": 1, "exact": 2}.get(self.row_playlist_match_kind(row), 0)
+            return int(self.row_is_in_current_playlist(row))
         if self.sort_column == "title":
             return row.title.lower()
         if self.sort_column == "artist":
@@ -4776,15 +3746,7 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
             return row.difficulty_text.lower()
         if self.sort_column == "downloads":
             return row.download_count
-        if self.sort_column == "upvotes":
-            return row.upvote_count
         return row.uploaded_sort
-
-    def reset_date_filter(self) -> None:
-        default_date_from, default_date_to = default_beatmap_date_filter_range()
-        self.date_filter_from.set(default_date_from)
-        self.date_filter_to.set(default_date_to)
-        self.refresh_table()
 
     def parse_duration_filter(self, text: str) -> float | None:
         value = text.strip()
@@ -4807,7 +3769,7 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
     def on_column_click(self, column: str) -> None:
         if self.sort_column != column:
             self.sort_column = column
-            self.sort_desc = column in {"uploaded", "downloads", "upvotes", "duration"}
+            self.sort_desc = column in {"uploaded", "downloads", "duration"}
         else:
             self.sort_desc = not self.sort_desc
         self.refresh_table()
@@ -4873,9 +3835,12 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
         if self.on_add_songs is not None:
             added, skipped = self.on_add_songs(songs)
             if added:
-                self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(self.existing_songs)
-                self.existing_track_identities = playlist_track_identity_set(self.existing_songs)
-                self.update_playlist_status_rows()
+                for song in songs:
+                    if song.hash.strip():
+                        self.existing_hashes.add(song.hash.strip().lower())
+                    if song.beatmapId.strip():
+                        self.existing_beatmap_ids.add(song.beatmapId.strip())
+                self.refresh_table()
             if added == 0:
                 self.set_status_message(f"No songs added. Skipped duplicates: {skipped}.")
             elif skipped:
@@ -4885,43 +3850,6 @@ class BeatmapBrowserDialog(BASE_DIALOG_CLASS):
             return
         self.result = songs
         self.destroy()
-
-    def update_playlist_status_rows(self) -> None:
-        """Update only playlist badges without rebuilding or repositioning the browser."""
-        if not self.can_update_ui():
-            return
-        scroll_position = self.tree.yview()
-        selected_ids = tuple(self.tree.selection())
-        focused_id = self.tree.focus()
-        children = self.tree.get_children()
-        for visible_index, row in enumerate(self._visible_rows):
-            if visible_index >= len(children):
-                break
-            item_id = children[visible_index]
-            match_kind = self.row_playlist_match_kind(row)
-            values = list(self.tree.item(item_id, "values"))
-            if values:
-                values[0] = (
-                    "✓ In playlist"
-                    if match_kind == "exact"
-                    else "≈ Song in playlist"
-                    if match_kind == "track"
-                    else ""
-                )
-            row_tag = (
-                "browser_existing_row"
-                if match_kind == "exact"
-                else "browser_same_song_row"
-                if match_kind == "track"
-                else ("browser_even_row" if visible_index % 2 == 0 else "browser_odd_row")
-            )
-            self.tree.item(item_id, values=values, tags=(row_tag,))
-        if selected_ids:
-            self.tree.selection_set(selected_ids)
-        if focused_id:
-            self.tree.focus(focused_id)
-        if scroll_position:
-            self.tree.yview_moveto(scroll_position[0])
 
 
 class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
@@ -4940,9 +3868,7 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         self.minsize(980, 620)
         self.result: list[SongEntry] = []
         self.on_add_song = on_add_song
-        self.existing_songs = existing_songs if existing_songs is not None else []
-        self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(self.existing_songs)
-        self.existing_track_identities = playlist_track_identity_set(self.existing_songs)
+        self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(existing_songs or [])
 
         self.page_var = tk.StringVar(value="1")
         self.page_info_var = tk.StringVar(value="Loading...")
@@ -4996,7 +3922,7 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         self.cards_window = self.canvas.create_window((0, 0), window=self.cards_frame, anchor="nw")
         self.cards_frame.bind("<Configure>", self.on_cards_configure)
         self.canvas.bind("<Configure>", self.on_canvas_configure)
-        self.bind("<MouseWheel>", self.on_mousewheel, add="+")
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
 
         footer = ttk.Frame(root)
         footer.pack(fill="x", pady=(8, 0))
@@ -5062,7 +3988,7 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         self.cards_window = self.canvas.create_window((0, 0), window=self.cards_frame, anchor="nw")
         self.cards_frame.bind("<Configure>", self.on_cards_configure)
         self.canvas.bind("<Configure>", self.on_canvas_configure)
-        self.bind("<MouseWheel>", self.on_mousewheel, add="+")
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
 
         footer = ctk.CTkFrame(root, corner_radius=8)
         footer.pack(fill="x", pady=(6, 0))
@@ -5080,7 +4006,7 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
 
     def destroy(self) -> None:
         try:
-            self.unbind("<MouseWheel>")
+            self.canvas.unbind_all("<MouseWheel>")
         except Exception:
             pass
         super().destroy()
@@ -5134,7 +4060,10 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         total_count: int,
         err: Exception | None,
     ) -> None:
-        safe_after(self, lambda: self._finish_load(page, rows, page_count, total_count, err))
+        try:
+            self.after(0, lambda: self._finish_load(page, rows, page_count, total_count, err))
+        except tk.TclError:
+            pass
 
     def _finish_load(
         self,
@@ -5284,29 +4213,20 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
             badge.grid(row=0, column=idx, padx=(0, 3), pady=(0, 2), sticky="w")
 
     def row_is_in_current_playlist(self, row: BeatmapListEntry) -> bool:
-        return self.row_playlist_match_kind(row) == "exact"
-
-    def row_playlist_match_kind(self, row: BeatmapListEntry) -> str:
-        return beatmap_playlist_match_kind(
-            row,
-            self.existing_hashes,
-            self.existing_beatmap_ids,
-            self.existing_track_identities,
-        )
+        row_hash = song_hash_from_record(row.record)
+        if row_hash and row_hash in self.existing_hashes:
+            return True
+        return bool(row.beatmap_id and row.beatmap_id in self.existing_beatmap_ids)
 
     def render_playlist_status_badge(self, parent: tk.Widget, row: BeatmapListEntry) -> None:
-        match_kind = self.row_playlist_match_kind(row)
-        if not match_kind:
+        if not self.row_is_in_current_playlist(row):
             return
-        badge_text = "In current playlist" if match_kind == "exact" else "Same song in playlist"
-        badge_bg = "#203B35" if match_kind == "exact" else "#3B321D"
-        badge_fg = "#D8FFF5" if match_kind == "exact" else "#FFF2C7"
         if HAS_CUSTOMTKINTER and ctk is not None:
             badge = ctk.CTkLabel(
                 parent,
-                text=badge_text,
-                fg_color=badge_bg,
-                text_color=badge_fg,
+                text="In current playlist",
+                fg_color="#251E3F",
+                text_color="#FFFFFF",
                 corner_radius=7,
                 height=22,
                 anchor="w",
@@ -5315,9 +4235,9 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         else:
             badge = tk.Label(
                 parent,
-                text=badge_text,
-                bg=badge_bg,
-                fg=badge_fg,
+                text="In current playlist",
+                bg="#251E3F",
+                fg="#FFFFFF",
                 font=("Segoe UI", 8, "bold"),
                 padx=5,
                 pady=2,
@@ -5328,7 +4248,10 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
     def load_card_cover(self, row: BeatmapListEntry, label: tk.Label) -> None:
         def worker() -> None:
             image = self.load_cover_photo(row)
-            safe_after(self, lambda: self.apply_cover_photo(row.beatmap_id, label, image))
+            try:
+                self.after(0, lambda: self.apply_cover_photo(row.beatmap_id, label, image))
+            except tk.TclError:
+                pass
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -5336,29 +4259,21 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         if not HAS_PILLOW or Image is None or ImageTk is None or ImageOps is None:
             return None
         cache_path = beatmap_cover_cache_path(row.beatmap_id)
-        used_cached_file = False
         try:
-            if cache_path.exists() and 0 < cache_path.stat().st_size <= MAX_COVER_RESPONSE_BYTES:
+            if cache_path.exists():
                 raw = cache_path.read_bytes()
-                used_cached_file = True
             else:
                 beatmap_cover_cache_dir().mkdir(parents=True, exist_ok=True)
                 raw = fetch_bytes(cover_url_from_record(row.record, row.beatmap_id))
-                atomic_write_bytes(cache_path, raw)
-            with Image.open(io.BytesIO(raw)) as source_image:
-                image = source_image.convert("RGB")
+                cache_path.write_bytes(raw)
+            image = Image.open(io.BytesIO(raw)).convert("RGB")
             contained = ImageOps.contain(image, (self.COVER_BOX_SIZE, self.COVER_BOX_SIZE), Image.Resampling.LANCZOS)
             square = Image.new("RGB", (self.COVER_BOX_SIZE, self.COVER_BOX_SIZE), "#202020")
             offset_x = (self.COVER_BOX_SIZE - contained.width) // 2
             offset_y = (self.COVER_BOX_SIZE - contained.height) // 2
             square.paste(contained, (offset_x, offset_y))
-            return square
+            return ImageTk.PhotoImage(square)
         except Exception:
-            if used_cached_file:
-                try:
-                    cache_path.unlink(missing_ok=True)
-                except OSError:
-                    pass
             return None
 
     def apply_cover_photo(self, beatmap_id: str, label: tk.Label, image) -> None:
@@ -5367,23 +4282,18 @@ class VisualBeatmapBrowserDialog(BASE_DIALOG_CLASS):
         if image is None:
             label.configure(text="Cover unavailable")
             return
-        try:
-            photo = ImageTk.PhotoImage(image) if ImageTk is not None else None
-        except Exception:
-            photo = None
-        if photo is None:
-            label.configure(text="Cover unavailable")
-            return
-        self._image_refs[beatmap_id] = photo
-        label.configure(image=photo, text="")
+        self._image_refs[beatmap_id] = image
+        label.configure(image=image, text="")
 
     def add_single_row(self, row: BeatmapListEntry) -> None:
         song = parse_song_from_record(row.record, row.beatmap_id)
         if self.on_add_song is not None:
             added = self.on_add_song(song)
             if added:
-                self.existing_hashes, self.existing_beatmap_ids = playlist_identity_sets(self.existing_songs)
-                self.existing_track_identities = playlist_track_identity_set(self.existing_songs)
+                if song.hash.strip():
+                    self.existing_hashes.add(song.hash.strip().lower())
+                if song.beatmapId.strip():
+                    self.existing_beatmap_ids.add(song.beatmapId.strip())
                 self.render_cards(preserve_scroll=True)
             self.status_var.set("Added to playlist." if added else "Song already in playlist.")
             return
@@ -5407,7 +4317,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             except Exception:
                 pass
         self.instance_guard = instance_guard
-        self.title(f"SR Playlist Forge v{APP_VERSION}")
+        self.title("SR Playlist Forge v.2.5")
         apply_app_window_icon(self)
         self.geometry("1220x700")
         self.minsize(1120, 620)
@@ -5436,21 +4346,13 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.quest_song_dir_var = tk.StringVar(value="/sdcard/SynthRidersUC/CustomSongs")
         self.quest_playlist_dir_var = tk.StringVar(value="/sdcard/Android/data/com.kluge.SynthRiders/files/Playlist")
         self.quest_adb_var = tk.StringVar(value="ADB: Searching...")
-        self.playlist_visual_status_var = tk.StringVar(value="Playlist visuals: not imported")
         self.download_cancel_event = threading.Event()
         self.download_events: queue.Queue[tuple[str, dict[str, Any]]] = queue.Queue()
         self.download_in_progress = False
         self.download_poll_after_id: str | None = None
         self.download_worker_thread: threading.Thread | None = None
-        self.song_import_in_progress = False
-        self.difficulty_refresh_in_progress = False
         self.session_save_after_id: str | None = None
         self.quest_status_after_id: str | None = None
-        self.quest_status_check_in_progress = False
-        self.playlist_visual_import_in_progress = False
-        self.playlist_preview_after_id: str | None = None
-        self.playlist_preview_label: Any | None = None
-        self._playlist_preview_photo: Any | None = None
         self.restoring_session = False
         self.creation_date_auto_managed = True
         self._suppress_creation_date_manual_detection = False
@@ -5458,13 +4360,11 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.sort_desc: bool = False
         self.current_view_indices: list[int] = []
         self.drag_source_iid: str | None = None
-        self.drag_source_iids: tuple[str, ...] = ()
         self.drag_target_iid: str | None = None
-        self.drag_original_iids: tuple[str, ...] = ()
-        self.drag_moved = False
-        self.drag_ghost_window: tk.Toplevel | None = None
         self.drag_blocked_notice_shown = False
         self.songs: list[SongEntry] = []
+        self.hash_lookup_cache: dict[str, dict[str, Any] | None] = {}
+        self.title_artist_lookup_cache: dict[str, dict[str, Any] | None] = {}
         self._tooltips: list[HoverTooltip] = []
         self.color_preview_canvases: dict[str, tk.Canvas] = {}
         self.style = ttk.Style(self)
@@ -5475,16 +4375,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.playlist_vars["creationDateHuman"].trace_add("write", lambda *_: self.on_creation_date_human_changed())
         for key in ("gradientTop", "gradientDown", "colorTitle", "colorTexture"):
             self.playlist_vars[key].trace_add("write", lambda *_ignored, field=key: self.update_color_preview(field))
-        for key in (
-            "namePlaylist",
-            "SelectedIconIndex",
-            "SelectedTexture",
-            "gradientTop",
-            "gradientDown",
-            "colorTitle",
-            "colorTexture",
-        ):
-            self.playlist_vars[key].trace_add("write", lambda *_ignored: self.schedule_playlist_visual_preview())
         for var in self.playlist_vars.values():
             var.trace_add("write", lambda *_: self.schedule_session_save())
         self.duration_filter_mode = tk.StringVar(value="Any")
@@ -5497,8 +4387,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.apply_theme()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.restore_session()
-        self.update_playlist_visual_import_status()
-        self.schedule_playlist_visual_preview()
         self.schedule_quest_status_check(initial=True)
 
     def report_callback_exception(
@@ -5532,7 +4420,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
         top_bar = ttk.Frame(root)
         top_bar.pack(fill="x", pady=(0, 8))
-        ttk.Label(top_bar, text=f"SR Playlist Forge v{APP_VERSION}", style="Title.TLabel").pack(side="left")
+        ttk.Label(top_bar, text="SR Playlist Forge v.2.5", style="Title.TLabel").pack(side="left")
         ttk.Label(top_bar, textvariable=self.stats_var).pack(side="left", padx=(12, 0))
 
         controls = ttk.Notebook(root)
@@ -5720,8 +4608,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.tree.bind("<ButtonPress-1>", self.on_song_tree_press)
         self.tree.bind("<B1-Motion>", self.on_song_tree_motion)
         self.tree.bind("<ButtonRelease-1>", self.on_song_tree_release)
-        self.tree.bind("<Escape>", self.cancel_song_tree_drag)
-        install_tree_column_width_persistence(self.tree, "playlist_editor", cols)
 
         sidebar = ttk.Frame(content, padding=(10, 0, 0, 0))
         content.add(sidebar, weight=0)
@@ -5799,7 +4685,7 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         top_bar = ctk.CTkFrame(root, corner_radius=8)
         top_bar.pack(fill="x", pady=(0, 6))
         top_bar.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(top_bar, text=f"SR Playlist Forge v{APP_VERSION}", font=ctk.CTkFont(size=16, weight="bold")).grid(
+        ctk.CTkLabel(top_bar, text="SR Playlist Forge v.2.5", font=ctk.CTkFont(size=16, weight="bold")).grid(
             row=0, column=0, padx=(12, 10), pady=6, sticky="w"
         )
         ctk.CTkLabel(top_bar, textvariable=self.stats_var).grid(row=0, column=1, padx=(0, 10), pady=6, sticky="w")
@@ -6009,8 +4895,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.tree.bind("<ButtonPress-1>", self.on_song_tree_press)
         self.tree.bind("<B1-Motion>", self.on_song_tree_motion)
         self.tree.bind("<ButtonRelease-1>", self.on_song_tree_release)
-        self.tree.bind("<Escape>", self.cancel_song_tree_drag)
-        install_tree_column_width_persistence(self.tree, "playlist_editor", cols)
 
         sidebar = ctk.CTkFrame(content, corner_radius=8, width=190)
         sidebar.grid(row=0, column=1, sticky="ns")
@@ -6143,278 +5027,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         fill = value if is_valid else palette["surface_alt"]
         outline = palette["border"] if is_valid else palette["warning"]
         canvas.configure(bg=fill, highlightbackground=outline, highlightcolor=outline)
-
-    def update_playlist_visual_import_status(self) -> None:
-        loaded = visual_assets.load_current_manifest(playlist_visual_cache_dir())
-        if loaded is None:
-            self.playlist_visual_status_var.set("Playlist visuals: not imported")
-            return
-        _import_dir, manifest = loaded
-        source_kind = str(manifest.get("sourceKind") or "installation").capitalize()
-        icon_count = len(manifest.get("icons", {})) if isinstance(manifest.get("icons"), dict) else 0
-        texture_count = len(manifest.get("textures", {})) if isinstance(manifest.get("textures"), dict) else 0
-        has_bordas = visual_assets.cached_font_path(playlist_visual_cache_dir()) is not None
-        font_status = " • Bordas initial" if has_bordas else ""
-        self.playlist_visual_status_var.set(
-            f"Ready from {source_kind} • {max(0, icon_count - 1)} icons + initial"
-            f" • {texture_count} textures{font_status}"
-        )
-
-    def adjust_playlist_visual_index(self, key: str, delta: int) -> None:
-        option_counts = {
-            "SelectedIconIndex": len(KNOWN_PLAYLIST_ICON_VALUES),
-            "SelectedTexture": len(KNOWN_PLAYLIST_TEXTURE_VALUES),
-        }
-        option_count = option_counts.get(key)
-        variable = self.playlist_vars.get(key)
-        if option_count is None or variable is None:
-            return
-        variable.set(str(wrapped_option_index(variable.get(), delta, option_count)))
-
-    def schedule_playlist_visual_preview(self) -> None:
-        if self.playlist_preview_after_id is not None:
-            try:
-                self.after_cancel(self.playlist_preview_after_id)
-            except Exception:
-                pass
-        try:
-            self.playlist_preview_after_id = self.after(60, self.update_playlist_visual_preview)
-        except Exception:
-            self.playlist_preview_after_id = None
-
-    @staticmethod
-    def _preview_color(value: str, fallback: str) -> tuple[int, int, int]:
-        candidate = value.strip()
-        if not re.fullmatch(r"#[0-9a-fA-F]{6}", candidate):
-            candidate = fallback
-        return tuple(int(candidate[position : position + 2], 16) for position in (1, 3, 5))
-
-    @staticmethod
-    def _tinted_visual(source: Any, color: tuple[int, int, int]) -> Any:
-        rgba = source.convert("RGBA")
-        tint = Image.new("RGBA", rgba.size, (*color, 255))
-        tint.putalpha(rgba.getchannel("A"))
-        return tint
-
-    def build_playlist_visual_preview(self, width: int = 360, height: int = 220) -> Any | None:
-        if not HAS_PILLOW or Image is None or ImageOps is None:
-            return None
-        top = self._preview_color(self.playlist_vars["gradientTop"].get(), "#DDD8BF")
-        bottom = self._preview_color(self.playlist_vars["gradientDown"].get(), "#E75193")
-        gradient = Image.new("RGBA", (1, height))
-        gradient.putdata(
-            [
-                (
-                    round(top[0] + (bottom[0] - top[0]) * row / max(1, height - 1)),
-                    round(top[1] + (bottom[1] - top[1]) * row / max(1, height - 1)),
-                    round(top[2] + (bottom[2] - top[2]) * row / max(1, height - 1)),
-                    255,
-                )
-                for row in range(height)
-            ]
-        )
-        preview = gradient.resize((width, height))
-
-        texture_index = force_int(self.playlist_vars["SelectedTexture"].get(), 0)
-        texture_path = visual_assets.cached_visual_path(
-            playlist_visual_cache_dir(),
-            "textures",
-            texture_index,
-        )
-        if texture_path is not None:
-            try:
-                with Image.open(texture_path) as texture_source:
-                    texture = ImageOps.fit(texture_source.convert("RGBA"), (width, height), method=Image.Resampling.LANCZOS)
-                texture_color = self._preview_color(self.playlist_vars["colorTexture"].get(), "#0F9E88")
-                texture = self._tinted_visual(texture, texture_color)
-                preview.alpha_composite(texture)
-            except Exception:
-                pass
-
-        icon_index = force_int(self.playlist_vars["SelectedIconIndex"].get(), 0)
-        title_color = self._preview_color(self.playlist_vars["colorTitle"].get(), "#FFFFFF")
-        if icon_index == 0 and ImageDraw is not None and ImageFont is not None:
-            draw = ImageDraw.Draw(preview)
-            playlist_name = self.playlist_vars["namePlaylist"].get().strip()
-            initial = next((character.upper() for character in playlist_name if not character.isspace()), "?")
-            font = None
-            bordas_path = visual_assets.cached_font_path(playlist_visual_cache_dir())
-            if bordas_path is not None:
-                try:
-                    font = ImageFont.truetype(str(bordas_path), 92)
-                except Exception:
-                    font = None
-            if font is None:
-                try:
-                    font = ImageFont.truetype("DejaVuSans-Bold.ttf", 88)
-                except Exception:
-                    font = ImageFont.load_default()
-            try:
-                initial_box = draw.textbbox((0, 0), initial, font=font, stroke_width=1)
-                initial_width = initial_box[2] - initial_box[0]
-                initial_height = initial_box[3] - initial_box[1]
-                initial_position = (
-                    (width - initial_width) // 2 - initial_box[0],
-                    24 + (104 - initial_height) // 2 - initial_box[1],
-                )
-            except Exception:
-                initial_position = (width // 2 - 20, 35)
-            draw.text(
-                initial_position,
-                initial,
-                font=font,
-                fill=(*title_color, 255),
-                stroke_width=1,
-                stroke_fill=(*title_color, 180),
-            )
-        else:
-            icon_path = visual_assets.cached_visual_path(
-                playlist_visual_cache_dir(),
-                "icons",
-                icon_index,
-            )
-            if icon_path is not None:
-                try:
-                    with Image.open(icon_path) as icon_source:
-                        icon = ImageOps.contain(icon_source.convert("RGBA"), (112, 112), method=Image.Resampling.LANCZOS)
-                    icon = self._tinted_visual(icon, title_color)
-                    preview.alpha_composite(icon, ((width - icon.width) // 2, 22))
-                except Exception:
-                    pass
-
-        if ImageDraw is not None:
-            try:
-                draw = ImageDraw.Draw(preview)
-                title = (self.playlist_vars["namePlaylist"].get().strip() or "New Playlist")[:42]
-                text_box = draw.textbbox((0, 0), title)
-                text_width = text_box[2] - text_box[0]
-            except Exception:
-                title = (self.playlist_vars["namePlaylist"].get().strip() or "New Playlist")[:42]
-                text_width = len(title) * 6
-            draw.rounded_rectangle(
-                (18, height - 48, width - 18, height - 14),
-                radius=10,
-                fill=(5, 7, 12, 120),
-            )
-            draw.text(
-                ((width - text_width) // 2, height - 38),
-                title,
-                fill=(*title_color, 255),
-            )
-        return preview
-
-    def update_playlist_visual_preview(self) -> None:
-        self.playlist_preview_after_id = None
-        label = self.playlist_preview_label
-        if label is None:
-            return
-        try:
-            if not label.winfo_exists():
-                return
-        except Exception:
-            return
-        preview = self.build_playlist_visual_preview()
-        if preview is None or ImageTk is None:
-            try:
-                label.configure(text="Preview requires Pillow", image=None)
-            except Exception:
-                pass
-            return
-        try:
-            photo = ImageTk.PhotoImage(preview)
-            self._playlist_preview_photo = photo
-            label.configure(image=photo, text="")
-        except Exception:
-            pass
-
-    def _set_playlist_visual_progress(self, message: str) -> None:
-        safe_after(self, lambda: self.playlist_visual_status_var.set(message))
-
-    def _start_playlist_visual_import(
-        self,
-        worker: Callable[[Callable[[str], None]], visual_assets.PlaylistVisualImportResult],
-        initial_status: str,
-    ) -> None:
-        if self.playlist_visual_import_in_progress:
-            messagebox.showinfo("Playlist Visuals", "A playlist visual import is already running.", parent=self)
-            return
-        self.playlist_visual_import_in_progress = True
-        self.playlist_visual_status_var.set(initial_status)
-
-        def finish_success(result: visual_assets.PlaylistVisualImportResult) -> None:
-            self.playlist_visual_import_in_progress = False
-            self.update_playlist_visual_import_status()
-            self.schedule_playlist_visual_preview()
-            messagebox.showinfo(
-                "Playlist Visuals Imported",
-                f"Imported {result.icon_count} icon options and {result.texture_count} texture options.\n\n"
-                "The game installation was only read; it was not modified.",
-                parent=self,
-            )
-
-        def finish_error(err: Exception) -> None:
-            self.playlist_visual_import_in_progress = False
-            self.update_playlist_visual_import_status()
-            messagebox.showerror("Playlist Visual Import Failed", str(err), parent=self)
-
-        def run_worker() -> None:
-            try:
-                result = worker(self._set_playlist_visual_progress)
-            except Exception as err:
-                safe_after(self, lambda error=err: finish_error(error))
-                return
-            safe_after(self, lambda imported=result: finish_success(imported))
-
-        threading.Thread(target=run_worker, daemon=True, name="playlist-visual-import").start()
-
-    def import_playlist_visuals_from_quest(self) -> None:
-        adb_path = find_adb_executable()
-        if not adb_path:
-            messagebox.showerror("ADB Not Found", "adb was not found. Bundle or install adb first.", parent=self)
-            return
-        try:
-            devices = list_adb_devices(adb_path)
-        except Exception as err:
-            messagebox.showerror("Quest Not Available", str(err), parent=self)
-            return
-        if not devices:
-            messagebox.showerror(
-                "Quest Not Detected",
-                "Connect the headset and allow USB debugging first.",
-                parent=self,
-            )
-            return
-        if not messagebox.askyesno(
-            "Import Playlist Visuals from Quest",
-            "SR Playlist Forge will read approximately 1.2 GB of Unity resources from Synth Riders.\n\n"
-            "Temporary game data is removed after the icons and textures have been cached. "
-            "Nothing on the headset will be changed.\n\nContinue?",
-            parent=self,
-        ):
-            return
-        cache_root = playlist_visual_cache_dir()
-        self._start_playlist_visual_import(
-            lambda progress: visual_assets.import_from_quest(adb_path, cache_root, progress),
-            "Preparing Quest visual import…",
-        )
-
-    def import_playlist_visuals_from_pc(self) -> None:
-        detected = visual_assets.discover_pc_installations()
-        initial_dir = detected[0] if detected else Path.home()
-        selected = filedialog.askdirectory(
-            parent=self,
-            title="Select the Synth Riders installation folder",
-            initialdir=str(initial_dir),
-            mustexist=True,
-        )
-        if not selected:
-            return
-        selected_path = Path(selected)
-        cache_root = playlist_visual_cache_dir()
-        self._start_playlist_visual_import(
-            lambda progress: visual_assets.import_from_pc(selected_path, cache_root, progress),
-            "Preparing PC visual import…",
-        )
 
     def selected_index(self) -> int | None:
         selection = self.tree.selection()
@@ -6596,66 +5208,13 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             return False
         if self.difficulty_filter_choice.get().strip().lower() != "any":
             return False
-        if hasattr(self, "concept_search_var") and self.concept_search_var.get().strip():
-            return False
         return True
 
     def clear_drag_state(self) -> None:
-        if self.drag_ghost_window is not None:
-            try:
-                self.drag_ghost_window.destroy()
-            except tk.TclError:
-                pass
-        self.drag_ghost_window = None
-        try:
-            self.tree.configure(cursor="")
-        except tk.TclError:
-            pass
         self.drag_source_iid = None
-        self.drag_source_iids = ()
         self.drag_target_iid = None
-        self.drag_original_iids = ()
-        self.drag_moved = False
-        for view_row, item_id in enumerate(self.tree.get_children()):
-            self.tree.item(item_id, tags=(self.playlist_row_tag(view_row),))
-
-    def _show_drag_ghost(self, event) -> None:  # type: ignore[no-untyped-def]
-        if self.drag_source_iid is None:
-            return
-        if self.drag_ghost_window is None:
-            if len(self.drag_source_iids) > 1:
-                title = f"{len(self.drag_source_iids)} songs"
-            else:
-                title = self.tree.set(self.drag_source_iid, "name") or "Song"
-            ghost = tk.Toplevel(self)
-            ghost.overrideredirect(True)
-            ghost.attributes("-topmost", True)
-            try:
-                ghost.attributes("-alpha", 0.94)
-            except tk.TclError:
-                pass
-            tk.Label(
-                ghost,
-                text=f"↕  {title}",
-                bg="#1B202C",
-                fg="#F5F7FB",
-                font=("Segoe UI", 10, "bold"),
-                padx=14,
-                pady=8,
-                highlightthickness=2,
-                highlightbackground="#8B5CF6",
-            ).pack()
-            self.drag_ghost_window = ghost
-        x = self.tree.winfo_rootx() + event.x + 16
-        y = self.tree.winfo_rooty() + event.y + 16
-        self.drag_ghost_window.geometry(f"+{x}+{y}")
-
-    def _retag_drag_rows(self) -> None:
-        for view_row, item_id in enumerate(self.tree.get_children()):
-            tags = [self.playlist_row_tag(view_row)]
-            if item_id in self.drag_source_iids:
-                tags.append("drag_source")
-            self.tree.item(item_id, tags=tuple(tags))
+        for item_id in self.tree.get_children():
+            self.tree.item(item_id, tags=(self.playlist_row_tag_for_iid(item_id),))
 
     def on_song_tree_press(self, event) -> None:  # type: ignore[no-untyped-def]
         row_id = self.tree.identify_row(event.y)
@@ -6673,148 +5232,59 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             return
         self.drag_blocked_notice_shown = False
         self.drag_source_iid = row_id
-        selected = set(self.tree.selection())
-        self.drag_source_iids = tuple(
-            item_id
-            for item_id in self.tree.get_children()
-            if item_id == row_id or (row_id in selected and item_id in selected)
-        )
         self.drag_target_iid = row_id
-        self.drag_original_iids = tuple(self.tree.get_children())
-        self.drag_moved = False
 
     def on_song_tree_motion(self, event) -> None:  # type: ignore[no-untyped-def]
         if self.drag_source_iid is None:
             return
-        self.tree.configure(cursor="hand2")
-        height = self.tree.winfo_height()
-        if event.y < 32:
-            self.tree.yview_scroll(-1, "units")
-        elif event.y > height - 32:
-            self.tree.yview_scroll(1, "units")
-
         row_id = self.tree.identify_row(event.y)
         self.drag_target_iid = row_id if row_id else None
-        current = list(self.tree.get_children())
-        dragged_set = set(self.drag_source_iids)
-        remaining = [item_id for item_id in current if item_id not in dragged_set]
-        if row_id and row_id not in dragged_set and row_id in remaining:
-            target_position = remaining.index(row_id)
-            bbox = self.tree.bbox(row_id)
-            if bbox and event.y >= bbox[1] + (bbox[3] / 2):
-                target_position += 1
-        elif not row_id:
-            target_position = 0 if event.y < height / 2 else len(remaining)
-        else:
-            row_position = current.index(row_id) if row_id in current else current.index(self.drag_source_iid)
-            target_position = sum(1 for item_id in current[:row_position] if item_id not in dragged_set)
-
-        preview = move_id_group(current, self.drag_source_iids, target_position)
-        if tuple(preview) != tuple(current):
-            for position, item_id in enumerate(preview):
-                self.tree.move(item_id, "", position)
-            self.drag_moved = tuple(preview) != self.drag_original_iids
-            self.tree.selection_set(self.drag_source_iids)
-            self.tree.focus(self.drag_source_iid)
-        self._retag_drag_rows()
-        self._show_drag_ghost(event)
-
-    def cancel_song_tree_drag(self, _event=None) -> None:
-        if self.drag_source_iid is None:
-            return
-        for position, item_id in enumerate(self.drag_original_iids):
-            if self.tree.exists(item_id):
-                self.tree.move(item_id, "", position)
-        if self.drag_source_iids:
-            self.tree.selection_set(self.drag_source_iids)
-            self.tree.focus(self.drag_source_iid)
-        self.clear_drag_state()
+        for item_id in self.tree.get_children():
+            row_tag = self.playlist_row_tag_for_iid(item_id)
+            tags = (row_tag, "drag_target") if item_id == self.drag_target_iid else (row_tag,)
+            self.tree.item(item_id, tags=tags)
 
     def on_song_tree_release(self, _event=None) -> None:
-        source_iid = self.drag_source_iid
-        if source_iid is None:
+        if self.drag_source_iid is None or self.drag_target_iid is None:
+            self.clear_drag_state()
+            return
+        if self.drag_source_iid == self.drag_target_iid:
             self.clear_drag_state()
             return
 
         try:
-            order = tuple(self.tree.get_children())
-            reordered_songs = reorder_items_by_index_ids(list(self.songs), order)
+            source_idx = int(self.drag_source_iid)
+            target_idx = int(self.drag_target_iid)
         except ValueError:
-            self.cancel_song_tree_drag()
-            return
-        if not self.drag_moved or order == self.drag_original_iids:
             self.clear_drag_state()
             return
 
-        dragged_iids = self.drag_source_iids
-        self.songs = reordered_songs
-        selected_positions = tuple(order.index(item_id) for item_id in dragged_iids)
-        source_position = order.index(source_iid)
-        self.refresh_table(keep_index=source_position)
-        self.tree.selection_set(tuple(str(position) for position in selected_positions))
-        self.tree.focus(str(source_position))
+        song = self.songs.pop(source_idx)
+        if source_idx < target_idx:
+            target_idx -= 1
+        self.songs.insert(target_idx, song)
+        self.refresh_table(keep_index=target_idx)
 
     def refresh_difficulty_labels(self) -> None:
         if not self.songs:
             return
-        if self.difficulty_refresh_in_progress:
-            messagebox.showinfo("Difficulty Refresh", "A difficulty refresh is already in progress.")
-            return
-        self.difficulty_refresh_in_progress = True
-        snapshots: list[tuple[int, SongEntry]] = []
-        for index, song in enumerate(self.songs):
+        updated = 0
+        checked = 0
+        for song in self.songs:
             # Skip when we already have multiple labels.
             if "," in (song.difficultyText or ""):
                 continue
-            snapshots.append((index, SongEntry(**asdict(song))))
-        if not self.download_in_progress:
-            self.download_status_var.set(f"Refreshing difficulties for {len(snapshots)} songs...")
-
-        def worker() -> None:
-            updates: list[tuple[int, str, str, str]] = []
-            error: Exception | None = None
-            try:
-                for index, song in snapshots:
-                    record = self.find_beatmap_record_by_hash(song.hash)
-                    if not record:
-                        record = self.find_beatmap_record_by_title_artist(song.name, song.author)
-                    if not record:
-                        continue
-                    new_text = infer_difficulty_text_from_record(record, song.difficulty)
-                    if new_text and new_text != (song.difficultyText or str(song.difficulty)):
-                        updates.append((index, song.hash, song.name, new_text))
-            except Exception as err:  # noqa: BLE001
-                error = err
-            safe_after(
-                self,
-                lambda: self._finish_refresh_difficulty_labels(updates, len(snapshots), error),
-            )
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _finish_refresh_difficulty_labels(
-        self,
-        updates: list[tuple[int, str, str, str]],
-        checked: int,
-        error: Exception | None,
-    ) -> None:
-        self.difficulty_refresh_in_progress = False
-        if not self.download_in_progress:
-            self.download_status_var.set("Idle")
-        if error is not None:
-            messagebox.showerror("Difficulty Refresh Failed", str(error))
-            return
-        updated = 0
-        for index, original_hash, original_name, new_text in updates:
-            if not 0 <= index < len(self.songs):
+            checked += 1
+            rec = self.find_beatmap_record_by_hash(song.hash)
+            if not rec:
+                rec = self.find_beatmap_record_by_title_artist(song.name, song.author)
+            if not rec:
                 continue
-            song = self.songs[index]
-            if song.hash != original_hash or song.name != original_name:
-                continue
-            song.difficultyText = new_text
-            updated += 1
-        if updated:
-            self.refresh_table()
+            new_text = infer_difficulty_text_from_record(rec, song.difficulty)
+            if new_text and new_text != (song.difficultyText or str(song.difficulty)):
+                song.difficultyText = new_text
+                updated += 1
+        self.refresh_table()
         messagebox.showinfo("Difficulty Refresh", f"Updated {updated} songs (checked {checked}).")
 
     def update_stats(self) -> None:
@@ -7010,11 +5480,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 self.tree.tag_configure("playlist_even_row", background=palette["table_even"], foreground=palette["fg"])
                 self.tree.tag_configure("playlist_odd_row", background=palette["table_odd"], foreground=palette["fg"])
                 self.tree.tag_configure("drag_target", background=palette["drag_target"], foreground=palette["select_fg"])
-                self.tree.tag_configure(
-                    "drag_source",
-                    background=palette.get("drag_source", palette["accent"]),
-                    foreground=palette["accent_text"],
-                )
             except tk.TclError:
                 pass
         for key in self.color_preview_canvases:
@@ -7183,28 +5648,20 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.quest_status_after_id = self.after(delay, self.refresh_quest_status)
 
     def refresh_quest_status(self) -> None:
-        if self.quest_status_check_in_progress:
-            self.schedule_quest_status_check()
-            return
-        self.quest_status_check_in_progress = True
-
-        def finish(connected: bool, text: str, adb_text: str) -> None:
-            self.quest_status_check_in_progress = False
-            self.apply_quest_status(connected, text, adb_text)
+        adb_path = find_adb_executable()
 
         def worker() -> None:
-            adb_path = find_adb_executable()
             if not adb_path:
-                safe_after(self, lambda: finish(False, "Quest: adb not found", "ADB: Not found"))
+                self.after(0, lambda: self.apply_quest_status(False, "Quest: adb not found", "ADB: Not found"))
                 return
             try:
                 devices = list_adb_devices(adb_path)
                 connected = bool(devices)
                 text = "Quest: Connected" if connected else "Quest: Not detected"
                 adb_text = f"ADB: {adb_path}"
-                safe_after(self, lambda: finish(connected, text, adb_text))
+                self.after(0, lambda: self.apply_quest_status(connected, text, adb_text))
             except Exception:
-                safe_after(self, lambda: finish(False, "Quest: adb unavailable", f"ADB: {adb_path}"))
+                self.after(0, lambda: self.apply_quest_status(False, "Quest: adb unavailable", f"ADB: {adb_path}"))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -7295,10 +5752,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self.download_events.put((event_type, payload))
 
     def show_text_report_dialog(self, title: str, report_text: str, default_filename: str = "download_report.txt") -> None:
-        if HAS_CUSTOMTKINTER and ctk is not None:
-            self._show_modern_text_report_dialog(title, report_text, default_filename)
-            return
-
         dialog = BASE_DIALOG_CLASS(self)
         dialog.title(title)
         apply_app_window_icon(dialog)
@@ -7331,108 +5784,12 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             )
             if not out_path:
                 return
-            try:
-                atomic_write_text(Path(out_path), text.get("1.0", "end-1c"))
-            except OSError as err:
-                messagebox.showerror("Save Report", f"Could not save the report:\n{err}", parent=dialog)
+            Path(out_path).write_text(text.get("1.0", "end-1c"), encoding="utf-8")
 
         ttk.Button(btns, text="Copy All", command=copy_all).pack(side="left")
         ttk.Button(btns, text="Save as .txt", command=save_as_txt).pack(side="left", padx=6)
         ttk.Button(btns, text="Close", command=dialog.destroy).pack(side="right")
 
-        dialog.grab_set()
-
-    def _show_modern_text_report_dialog(
-        self, title: str, report_text: str, default_filename: str = "download_report.txt"
-    ) -> None:
-        assert ctk is not None
-        bg, surface = "#0A0C10", "#151922"
-        surface_raised, surface_soft = "#1B202C", "#11151D"
-        border, text_color, muted = "#282E3D", "#F5F7FB", "#969EAF"
-        accent = "#8B5CF6"
-
-        dialog = ctk.CTkToplevel(self)
-        dialog.title(title)
-        apply_app_window_icon(dialog)
-        dialog.geometry("920x650")
-        dialog.minsize(720, 460)
-        dialog.configure(fg_color=bg)
-        dialog.transient(self)
-
-        root = ctk.CTkFrame(dialog, fg_color=bg)
-        root.pack(fill="both", expand=True, padx=24, pady=22)
-        ctk.CTkLabel(
-            root, text="TRANSFER REPORT", text_color=muted, font=ctk.CTkFont(size=11, weight="bold")
-        ).pack(anchor="w")
-        ctk.CTkLabel(
-            root, text=title, text_color=text_color, font=ctk.CTkFont(size=24, weight="bold")
-        ).pack(anchor="w", pady=(3, 2))
-        ctk.CTkLabel(
-            root,
-            text=f"Report ready · {len(report_text.splitlines())} report lines",
-            text_color="#34D399",
-            font=ctk.CTkFont(size=12, weight="bold"),
-        ).pack(anchor="w", pady=(0, 14))
-
-        report_card = ctk.CTkFrame(
-            root, fg_color=surface, corner_radius=14, border_width=1, border_color=border
-        )
-        report_card.pack(fill="both", expand=True)
-        report_box = ctk.CTkTextbox(
-            report_card,
-            wrap="word",
-            fg_color=surface_soft,
-            text_color=text_color,
-            border_width=0,
-            corner_radius=9,
-            font=ctk.CTkFont(family="Consolas", size=12),
-        )
-        report_box.pack(fill="both", expand=True, padx=12, pady=12)
-        report_box.insert("1.0", report_text)
-        report_box.focus_set()
-
-        buttons = ctk.CTkFrame(root, fg_color="transparent")
-        buttons.pack(fill="x", pady=(14, 0))
-
-        def copy_all() -> None:
-            dialog.clipboard_clear()
-            dialog.clipboard_append(report_box.get("1.0", "end-1c"))
-
-        def save_as_txt() -> None:
-            out_path = filedialog.asksaveasfilename(
-                parent=dialog,
-                title="Save Report As",
-                defaultextension=".txt",
-                initialfile=default_filename,
-                filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")],
-            )
-            if not out_path:
-                return
-            try:
-                atomic_write_text(Path(out_path), report_box.get("1.0", "end-1c"))
-            except OSError as err:
-                messagebox.showerror("Save Report", f"Could not save the report:\n{err}", parent=dialog)
-
-        secondary = {
-            "height": 38,
-            "fg_color": surface_raised,
-            "hover_color": border,
-            "text_color": text_color,
-        }
-        ctk.CTkButton(buttons, text="Copy all", command=copy_all, width=110, **secondary).pack(side="left")
-        ctk.CTkButton(buttons, text="Save as .txt", command=save_as_txt, width=125, **secondary).pack(
-            side="left", padx=8
-        )
-        ctk.CTkButton(
-            buttons,
-            text="Close",
-            command=dialog.destroy,
-            width=120,
-            height=38,
-            fg_color=accent,
-            hover_color="#7C3AED",
-            font=ctk.CTkFont(weight="bold"),
-        ).pack(side="right")
         dialog.grab_set()
 
     def _poll_download_events(self) -> None:
@@ -7480,13 +5837,10 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         self._poll_download_events()
 
     def hash_exists(self, song_hash: str, ignore_index: int | None = None) -> bool:
-        target_hash = normalized_song_hash(song_hash)
-        if not target_hash:
-            return False
         for idx, song in enumerate(self.songs):
             if ignore_index is not None and idx == ignore_index:
                 continue
-            if normalized_song_hash(song.hash) == target_hash:
+            if song.hash == song_hash:
                 return True
         return False
 
@@ -7495,32 +5849,12 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         if not url_text:
             messagebox.showerror("Missing URL", "Enter a Synthriderz beatmap URL first.")
             return
-        if self.song_import_in_progress:
-            messagebox.showinfo("Import Running", "Another song import is already in progress.")
+        try:
+            song = fetch_song_from_url(url_text)
+        except Exception as err:  # noqa: BLE001
+            messagebox.showerror("Import Failed", str(err))
             return
-        self.song_import_in_progress = True
-        if not self.download_in_progress:
-            self.download_status_var.set("Loading beatmap metadata...")
 
-        def worker() -> None:
-            try:
-                song = fetch_song_from_url(url_text)
-                safe_after(self, lambda: self._finish_add_song_from_url(song, None))
-            except Exception as err:  # noqa: BLE001
-                safe_after(self, lambda error=err: self._finish_add_song_from_url(None, error))
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _finish_add_song_from_url(self, song: SongEntry | None, error: Exception | None) -> None:
-        self.song_import_in_progress = False
-        if not self.download_in_progress:
-            self.download_status_var.set("Idle")
-        if error is not None:
-            messagebox.showerror("Import Failed", str(error))
-            return
-        if song is None:
-            messagebox.showerror("Import Failed", "No song metadata was returned.")
-            return
         if self.hash_exists(song.hash):
             messagebox.showerror("Duplicate Hash", "This song hash is already in the playlist.")
             return
@@ -7543,14 +5877,11 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         added = 0
         skipped = 0
         keep_index: int | None = None
-        existing_hashes = {normalized_song_hash(song.hash) for song in self.songs if normalized_song_hash(song.hash)}
         for song in songs:
-            song_hash = normalized_song_hash(song.hash)
-            if not song_hash or song_hash in existing_hashes:
+            if self.hash_exists(song.hash):
                 skipped += 1
                 continue
             self.songs.append(song)
-            existing_hashes.add(song_hash)
             keep_index = len(self.songs) - 1
             added += 1
 
@@ -7586,57 +5917,30 @@ class PlaylistEditorApp(BASE_TK_CLASS):
     def add_songs_from_synth_paths(self, paths: list[str]) -> None:
         if not paths:
             return
-        if self.song_import_in_progress:
-            messagebox.showinfo("Import Running", "Another song import is already in progress.")
-            return
-        self.song_import_in_progress = True
-        if not self.download_in_progress:
-            self.download_status_var.set(f"Reading metadata for {len(paths)} .synth files...")
 
-        def worker() -> None:
-            imported: list[SongEntry] = []
-            skipped = 0
-            failed: list[str] = []
-            for raw_path in paths:
-                path = raw_path.strip().strip("{}").strip('"').strip("'")
-                beatmap_id = self.extract_beatmap_id_from_synth_filename(path)
-                if not beatmap_id:
-                    skipped += 1
-                    continue
-                url_text = f"https://synthriderz.com/beatmaps/{beatmap_id}"
-                try:
-                    imported.append(fetch_song_from_url(url_text))
-                except Exception as err:  # noqa: BLE001
-                    failed.append(f"{Path(path).name}: {err}")
-            safe_after(
-                self,
-                lambda: self._finish_add_songs_from_synth_paths(imported, skipped, failed),
-            )
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _finish_add_songs_from_synth_paths(
-        self,
-        imported: list[SongEntry],
-        skipped: int,
-        failed: list[str],
-    ) -> None:
-        self.song_import_in_progress = False
-        if not self.download_in_progress:
-            self.download_status_var.set("Idle")
-        existing_hashes = {normalized_song_hash(song.hash) for song in self.songs if normalized_song_hash(song.hash)}
         added = 0
-        for song in imported:
-            song_hash = normalized_song_hash(song.hash)
-            if not song_hash or song_hash in existing_hashes:
+        skipped = 0
+        failed: list[str] = []
+        for raw_path in paths:
+            path = raw_path.strip().strip("{}").strip('"').strip("'")
+            beatmap_id = self.extract_beatmap_id_from_synth_filename(path)
+            if not beatmap_id:
+                skipped += 1
+                continue
+            url_text = f"https://synthriderz.com/beatmaps/{beatmap_id}"
+            try:
+                song = fetch_song_from_url(url_text)
+            except Exception as err:  # noqa: BLE001
+                failed.append(f"{Path(path).name}: {err}")
+                continue
+
+            if self.hash_exists(song.hash):
                 skipped += 1
                 continue
             self.songs.append(song)
-            existing_hashes.add(song_hash)
             added += 1
 
-        if added:
-            self.refresh_table(keep_index=len(self.songs) - 1)
+        self.refresh_table(keep_index=len(self.songs) - 1 if self.songs else None)
         if failed:
             self.show_text_report_dialog(
                 "Add .synth Files (with errors)",
@@ -7700,17 +6004,10 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         keep_idx = min(anchor_idx, len(self.songs) - 1) if self.songs else None
         self.refresh_table(keep_index=keep_idx)
 
-    def confirm_clear_all_songs(self) -> bool:
-        return messagebox.askyesno(
-            "Clear All Songs",
-            "Remove all songs from the current playlist?",
-            parent=self,
-        )
-
     def clear_all_songs(self) -> None:
         if not self.songs:
             return
-        if not self.confirm_clear_all_songs():
+        if not messagebox.askyesno("Clear All Songs", "Remove all songs from the current playlist?"):
             return
         self.songs.clear()
         self.refresh_table(keep_index=None)
@@ -7763,13 +6060,28 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         imported_ts = force_int(raw.get("creationDate"), int(time.time()))
         self.set_creation_date_timestamp(imported_ts, auto_managed=False)
 
-        playlist_number = playlist_number_from_source_name(source_name)
-        if playlist_number is not None:
-            self.playlist_vars["playlistNumber"].set(playlist_number)
+        stem = Path(source_name).stem
+        m = re.match(r"^(\d{1,6})__", stem)
+        if m:
+            self.playlist_vars["playlistNumber"].set(str(int(m.group(1))))
 
         self.songs = []
-        for item in playlist_song_items(raw):
-            song = song_entry_from_playlist_item(item)
+        for item in raw.get("dataString", []):
+            if not isinstance(item, dict):
+                continue
+            song = SongEntry(
+                hash=str(item.get("hash", "")),
+                name=str(item.get("name", "")),
+                author=str(item.get("author", "")),
+                beatmapper=str(item.get("beatmapper", "")),
+                difficulty=force_int(item.get("difficulty"), 0),
+                difficultyText=str(item.get("difficultyText", item.get("difficulty", ""))),
+                trackDuration=force_float(item.get("trackDuration"), 0.0),
+                addedTime=force_int(item.get("addedTime"), int(time.time())),
+                beatmapId=str(item.get("beatmapId", "")),
+                sourceUrl=str(item.get("sourceUrl", "")),
+                downloadUrl=str(item.get("downloadUrl", "")),
+            )
             if song.hash:
                 self.songs.append(song)
 
@@ -7800,19 +6112,29 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             self.set_creation_date_timestamp(imported_ts, auto_managed=False)
 
             # Infer playlist number from filename prefix like 000007__halloween.playlist
-            playlist_number = playlist_number_from_source_name(source_name)
-            if playlist_number is not None:
-                self.playlist_vars["playlistNumber"].set(playlist_number)
+            stem = Path(path).stem
+            m = re.match(r"^(\d{1,6})__", stem)
+            if m:
+                self.playlist_vars["playlistNumber"].set(str(int(m.group(1))))
 
         added = 0
         skipped = 0
-        existing_hashes = {normalized_song_hash(song.hash) for song in self.songs if normalized_song_hash(song.hash)}
-        for item in playlist_song_items(raw):
-            song = song_entry_from_playlist_item(item)
-            song_hash = normalized_song_hash(song.hash)
-            if song_hash and song_hash not in existing_hashes:
+        for item in raw.get("dataString", []):
+            song = SongEntry(
+                hash=str(item.get("hash", "")),
+                name=str(item.get("name", "")),
+                author=str(item.get("author", "")),
+                beatmapper=str(item.get("beatmapper", "")),
+                difficulty=force_int(item.get("difficulty"), 0),
+                difficultyText=str(item.get("difficultyText", item.get("difficulty", ""))),
+                trackDuration=force_float(item.get("trackDuration"), 0.0),
+                addedTime=force_int(item.get("addedTime"), int(time.time())),
+                beatmapId=str(item.get("beatmapId", "")),
+                sourceUrl=str(item.get("sourceUrl", "")),
+                downloadUrl=str(item.get("downloadUrl", "")),
+            )
+            if song.hash and not self.hash_exists(song.hash):
                 self.songs.append(song)
-                existing_hashes.add(song_hash)
                 added += 1
             else:
                 skipped += 1
@@ -7834,17 +6156,107 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             if Path(path).exists():
                 if not messagebox.askyesno("File Exists", f"Overwrite existing file?\n{path}"):
                     return
-            atomic_write_text(Path(path), json.dumps(payload, indent=2, ensure_ascii=False))
+            Path(path).write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         except Exception as err:  # noqa: BLE001
             messagebox.showerror("Export Failed", str(err))
             return
         messagebox.showinfo("Exported", f"Saved:\n{path}")
 
     def find_beatmap_record_by_hash(self, song_hash: str) -> dict[str, Any] | None:
-        return lookup_beatmap_record_by_hash(song_hash)
+        if not song_hash:
+            return None
+        if song_hash in self.hash_lookup_cache:
+            return self.hash_lookup_cache[song_hash]
+
+        endpoints = [
+            f"https://synthriderz.com/api/beatmaps?hash={song_hash}",
+            f"https://synthriderz.com/api/beatmaps?checksum={song_hash}",
+            f"https://synthriderz.com/api/beatmaps?songHash={song_hash}",
+            f"https://api.synthriderz.com/beatmaps?hash={song_hash}",
+            f"https://api.synthriderz.com/beatmaps?checksum={song_hash}",
+            f"https://api.synthriderz.com/beatmaps?songHash={song_hash}",
+            f"https://synthriderz.com/api/beatmaps/search?hash={song_hash}",
+            f"https://synthriderz.com/api/beatmaps/search?checksum={song_hash}",
+            f"https://synthriderz.com/api/beatmaps/search?songHash={song_hash}",
+        ]
+        for endpoint in endpoints:
+            try:
+                payload = fetch_json(endpoint)
+                rec = pick_record_by_hash(payload, song_hash)
+                if rec:
+                    self.hash_lookup_cache[song_hash] = rec
+                    return rec
+            except Exception:  # noqa: BLE001
+                continue
+
+        # Fallback: iterate paginated beatmaps list and match by hash.
+        page = 1
+        while page <= 2000:
+            try:
+                payload = fetch_json(f"https://synthriderz.com/api/beatmaps?page={page}")
+                if not isinstance(payload, dict):
+                    break
+                items = payload.get("data")
+                if not isinstance(items, list):
+                    break
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_hash = find_first_scalar(item, ["hash", "checksum", "mapHash", "songHash", "fileHash"])
+                    if isinstance(item_hash, str) and item_hash.lower() == song_hash.lower():
+                        self.hash_lookup_cache[song_hash] = item
+                        return item
+                page_count = payload.get("pageCount")
+                if isinstance(page_count, int) and page >= page_count:
+                    break
+                page += 1
+            except Exception:  # noqa: BLE001
+                break
+
+        self.hash_lookup_cache[song_hash] = None
+        return None
 
     def find_beatmap_record_by_title_artist(self, title: str, artist: str) -> dict[str, Any] | None:
-        return lookup_beatmap_record_by_title_artist(title, artist)
+        title_norm = normalize_text(title or "")
+        artist_norm = normalize_text(artist or "")
+        if not title_norm:
+            return None
+        cache_key = f"{title_norm}::{artist_norm}"
+        if cache_key in self.title_artist_lookup_cache:
+            return self.title_artist_lookup_cache[cache_key]
+
+        page = 1
+        while page <= 2000:
+            try:
+                payload = fetch_json(f"https://synthriderz.com/api/beatmaps?page={page}")
+                if not isinstance(payload, dict):
+                    break
+                items = payload.get("data")
+                if not isinstance(items, list):
+                    break
+
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_title = normalize_text(str(item.get("title", "")))
+                    if item_title != title_norm:
+                        continue
+                    if artist_norm:
+                        item_artist = normalize_text(str(item.get("artist", "")))
+                        if item_artist != artist_norm:
+                            continue
+                    self.title_artist_lookup_cache[cache_key] = item
+                    return item
+
+                page_count = payload.get("pageCount")
+                if isinstance(page_count, int) and page >= page_count:
+                    break
+                page += 1
+            except Exception:  # noqa: BLE001
+                break
+
+        self.title_artist_lookup_cache[cache_key] = None
+        return None
 
     def enrich_song_download_metadata(self, song: SongEntry) -> None:
         enrich_song_download_metadata_shared(song)
@@ -8031,9 +6443,9 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
                 if transfer_mode in {"both", "playlist"}:
                     playlist_local_path = temp_path / playlist_filename
-                    atomic_write_text(
-                        playlist_local_path,
+                    playlist_local_path.write_text(
                         json.dumps(playlist_payload, indent=2, ensure_ascii=False),
+                        encoding="utf-8",
                     )
                     playlist_remote_path = join_remote_path(quest_playlist_dir, playlist_filename)
                     if not (duplicate_mode == "skip" and adb_remote_file_exists(adb_path, playlist_remote_path)):
@@ -8144,47 +6556,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
     def session_file_path(self) -> Path:
         return Path.home() / ".sr_playlist_forge_session.json"
 
-    def current_screen_bounds(self) -> tuple[int, int, int, int]:
-        if os.name == "nt":
-            try:
-                import ctypes
-
-                user32 = ctypes.windll.user32
-                return (
-                    int(user32.GetSystemMetrics(76)),
-                    int(user32.GetSystemMetrics(77)),
-                    int(user32.GetSystemMetrics(78)),
-                    int(user32.GetSystemMetrics(79)),
-                )
-            except Exception:  # noqa: BLE001
-                pass
-        return 0, 0, int(self.winfo_screenwidth()), int(self.winfo_screenheight())
-
-    def current_window_placement(self) -> dict[str, str]:
-        try:
-            geometry = self.geometry()
-            state = self.state()
-        except Exception:  # noqa: BLE001
-            return {}
-        placement = {"geometry": geometry}
-        if state == "zoomed":
-            placement["state"] = "zoomed"
-        else:
-            placement["state"] = "normal"
-        return placement
-
-    def restore_window_placement(self, raw: Any) -> None:
-        if not isinstance(raw, dict):
-            return
-        try:
-            geometry = constrain_window_geometry(raw.get("geometry"), self.current_screen_bounds())
-            if geometry is not None:
-                self.geometry(geometry)
-            if raw.get("state") == "zoomed":
-                self.after_idle(lambda: self.state("zoomed"))
-        except Exception:  # noqa: BLE001
-            pass
-
     def schedule_session_save(self) -> None:
         if self.restoring_session:
             return
@@ -8209,11 +6580,10 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 "song_dir": self.quest_song_dir_var.get(),
                 "playlist_dir": self.quest_playlist_dir_var.get(),
             },
-            "window": self.current_window_placement(),
             "songs": [asdict(song) for song in self.songs],
         }
         try:
-            atomic_write_text(self.session_file_path(), json.dumps(payload, ensure_ascii=False, indent=2))
+            self.session_file_path().write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:
             pass
 
@@ -8226,7 +6596,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
         except Exception:
             return
 
-        self.restore_window_placement(raw.get("window"))
         self.restoring_session = True
         try:
             playlist_raw = raw.get("playlist_vars", {})
@@ -8254,7 +6623,21 @@ class PlaylistEditorApp(BASE_TK_CLASS):
                 for item in songs_raw:
                     if not isinstance(item, dict):
                         continue
-                    restored.append(song_entry_from_playlist_item(item))
+                    restored.append(
+                        SongEntry(
+                            hash=str(item.get("hash", "")),
+                            name=str(item.get("name", "")),
+                            author=str(item.get("author", "")),
+                            beatmapper=str(item.get("beatmapper", "")),
+                            difficulty=force_int(item.get("difficulty"), 0),
+                            difficultyText=str(item.get("difficultyText", item.get("difficulty", ""))),
+                            trackDuration=force_float(item.get("trackDuration"), 0.0),
+                            addedTime=force_int(item.get("addedTime"), int(time.time())),
+                            beatmapId=str(item.get("beatmapId", "")),
+                            sourceUrl=str(item.get("sourceUrl", "")),
+                            downloadUrl=str(item.get("downloadUrl", "")),
+                        )
+                    )
             self.songs = restored
             self.update_generated_filename()
             self.refresh_table(keep_index=0 if self.songs else None)
@@ -8270,12 +6653,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
             except Exception:  # noqa: BLE001
                 pass
             self.quest_status_after_id = None
-        if self.playlist_preview_after_id:
-            try:
-                self.after_cancel(self.playlist_preview_after_id)
-            except Exception:  # noqa: BLE001
-                pass
-            self.playlist_preview_after_id = None
         self.save_session()
         if self.instance_guard is not None:
             self.instance_guard.release()
@@ -8285,12 +6662,6 @@ class PlaylistEditorApp(BASE_TK_CLASS):
 
 def main() -> None:
     install_global_exception_hooks()
-    # When this file is launched as a script, expose the already-loaded engine
-    # under its import name so the modern GUI can reuse it without loading a
-    # second copy of every model and dialog class.
-    sys.modules.setdefault("synth_playlist_editor", sys.modules[__name__])
-    from modern_gui import ModernPlaylistEditorApp
-
     instance_guard = SingleInstanceGuard()
     if not instance_guard.acquire():
         show_fatal_error_dialog(
@@ -8301,7 +6672,7 @@ def main() -> None:
         return
     app: PlaylistEditorApp | None = None
     try:
-        app = ModernPlaylistEditorApp(instance_guard=instance_guard)
+        app = PlaylistEditorApp(instance_guard=instance_guard)
         app.mainloop()
     finally:
         if app is None or instance_guard is not app.instance_guard:

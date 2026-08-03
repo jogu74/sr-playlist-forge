@@ -1,9 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files
 
-project_dir = Path.cwd()
+project_dir = Path(SPECPATH).resolve().parent
 datas = []
+hiddenimports = ['modern_gui', 'UnityPy']
+datas.extend(collect_data_files('UnityPy'))
 tools_dir = project_dir / "tools"
 if tools_dir.exists():
     datas.append((str(tools_dir), "tools"))
@@ -16,11 +19,18 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=datas,
-    hiddenimports=[],
-    hookspath=[],
+    hiddenimports=hiddenimports,
+    hookspath=[str(project_dir / 'hooks')],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'numpy',
+        'pandas',
+        'scipy',
+        'sqlalchemy',
+        'PIL._avif',
+        'PIL.AvifImagePlugin',
+    ],
     noarchive=False,
     optimize=0,
 )
