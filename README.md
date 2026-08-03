@@ -1,8 +1,18 @@
 # SR Playlist Forge
 
-SR Playlist Forge is a desktop playlist editor for Synth Riders custom playlists.
+[![Build Binaries](https://github.com/jogu74/sr-playlist-forge/actions/workflows/build-binaries.yml/badge.svg?branch=main)](https://github.com/jogu74/sr-playlist-forge/actions/workflows/build-binaries.yml)
+[![Latest Release](https://img.shields.io/github/v/release/jogu74/sr-playlist-forge)](https://github.com/jogu74/sr-playlist-forge/releases/latest)
+
+SR Playlist Forge 3 is a desktop playlist editor and Quest content manager for Synth Riders custom playlists.
 
 It is designed to make playlist creation faster than editing `.playlist` files by hand, while still exposing the fields that matter for cover styling, song management, downloads, and Quest transfer workflows.
+
+## Download
+
+- [Download SR Playlist Forge 3.0.0 for Windows](https://github.com/jogu74/sr-playlist-forge/releases/download/v3.0.0/SR.Playlist.Forge.3.0.0.setup.exe)
+- [View release notes and all downloads](https://github.com/jogu74/sr-playlist-forge/releases/tag/v3.0.0)
+
+Run the installer and launch SR Playlist Forge from the Start menu. Quest features require a USB connection with USB debugging approved in the headset.
 
 ## What It Does
 
